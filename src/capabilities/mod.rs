@@ -1,2 +1,2 @@
-pub mod completion;
+pub mod model;
 pub mod messages;

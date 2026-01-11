@@ -5,11 +5,10 @@ use futures::StreamExt;
 use tracing::debug;
 
 use crate::{
-    capabilities::completion::{ChatResponseChunk, CompletionRequest, CompletionResponse},
+    capabilities::model::{ChatResponseChunk, CompletionRequest, CompletionResponse},
     http::HttpClient,
     llm::{
-        client::{ChatStream, LlmClient},
-        gemini::interactions::{GeminiInteractionsChunkResponse, GeminiInteractionsRequest, GeminiInteractionsResponse},
+        client::{ChatStream, LlmClient}, gemini::model::{GeminiInteractionsChunkResponse, GeminiInteractionsRequest, GeminiInteractionsResponse},
     },
 };
 

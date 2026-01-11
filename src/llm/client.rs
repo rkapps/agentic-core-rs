@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use futures_util::Stream;
 
-use crate::capabilities::completion::{ChatResponseChunk, CompletionRequest, CompletionResponse};
+use crate::capabilities::model::{ChatResponseChunk, CompletionRequest, CompletionResponse};
 
 // Llm config defines the unified set of parameters
 pub struct LlmConfig {

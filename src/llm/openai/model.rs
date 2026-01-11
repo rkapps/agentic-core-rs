@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use tracing::debug;
 
-use crate::capabilities::completion::CompletionRequest;
+use crate::capabilities::model::CompletionRequest;
 
 #[derive(Serialize, Debug)]
 pub struct OpenAICompletionRequest {

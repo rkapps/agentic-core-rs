@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    agent::{Agent, AgentConfig},
-    llm::client::LlmClient,
+    agent::model::{Agent, AgentConfig}, llm::client::LlmClient
 };
 use anyhow::Result;
 

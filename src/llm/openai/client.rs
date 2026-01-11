@@ -5,11 +5,11 @@ use tracing::debug;
 use futures::StreamExt;
 
 use crate::{
-    capabilities::completion::{ChatResponseChunk, CompletionRequest, CompletionResponse},
+    capabilities::model::{ChatResponseChunk, CompletionRequest, CompletionResponse},
     http::HttpClient,
     llm::{
         client::{ChatStream, LlmClient},
-        openai::completion::{OpenAIChunkResponseData, OpenAICompletionRequest, OpenAICompletionResponse},
+        openai::model::{OpenAIChunkResponseData, OpenAICompletionRequest, OpenAICompletionResponse},
     },
 };
 

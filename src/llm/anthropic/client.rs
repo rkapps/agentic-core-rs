@@ -5,10 +5,10 @@ use futures::StreamExt;
 use tracing::debug;
 
 use crate::{
-    capabilities::completion::{ChatResponseChunk, CompletionRequest, CompletionResponse},
+    capabilities::model::{ChatResponseChunk, CompletionRequest, CompletionResponse},
     http::HttpClient,
     llm::{
-        anthropic::completion::{
+        anthropic::model::{
             AnthropicChunkResponse, AnthropicCompletionRequest, AnthropicCompletionResponse,
         },
         client::{ChatStream, LlmClient},

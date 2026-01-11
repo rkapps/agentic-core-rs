@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use tracing::debug;
 
-use crate::capabilities::{completion::CompletionRequest, messages::MessageRole};
+use crate::capabilities::{model::CompletionRequest, messages::MessageRole};
 
 #[derive(Debug, Serialize)]
 pub struct AnthropicCompletionRequest {
