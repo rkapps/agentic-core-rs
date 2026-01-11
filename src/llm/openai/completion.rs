@@ -14,7 +14,7 @@ pub struct OpenAICompletionRequest {
     previous_response_id: Option<String>,
     // top_p: f32,
     max_output_tokens: i32,
-    reasoning: OpenAICompletionRequestReasoning
+    reasoning: OpenAICompletionRequestReasoning,
 }
 
 #[derive(Serialize, Debug)]
@@ -46,8 +46,22 @@ pub struct OpenAICompletionResponseContent {
     pub text: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct OpentAIChunkResponse {
+    pub event: String,
+    pub data : Option<OpenAIChunkResponseData>
+}
+
+
+#[derive(Debug, Deserialize)]
+pub struct OpenAIChunkResponseData {
+    pub r#type: String,
+    pub delta: Option<String>,
+}
+
+
 impl OpenAICompletionRequest {
-    pub fn new(model: String, request: CompletionRequest) -> Self {
+    pub fn new(request: CompletionRequest) -> Self {
         let mut input: String = String::new();
         let mut response_id: Option<String> = None;
 
@@ -57,14 +71,14 @@ impl OpenAICompletionRequest {
                 response_id = message.response_id;
             }
         }
-        debug!("Input: {:#?} Response Id {:#?}", input, response_id.clone());
+        // debug!("Input: {:#?} Response Id {:#?}", input, response_id.clone());
 
         Self {
-            model: model,
+            model: request.model,
             instructions: request.system.unwrap_or(String::new()),
             input: input,
-            store: true,
-            stream: true,
+            store: false,
+            stream: request.stream,
             previous_response_id: response_id,
             max_output_tokens: request.max_tokens,
             reasoning: OpenAICompletionRequestReasoning { effort: String::from("low") }

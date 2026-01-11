@@ -10,6 +10,7 @@ pub struct GeminiCompletionRequest {
     system_instruction: GeminiCompletionRequestSystemInstruction,
     contents: Vec<GeminiCompletionRequestContent>,
     generation_config: GeminiCompletionConfig,
+    stream: bool
 }
 
 #[derive(Debug, Serialize)]
@@ -97,6 +98,7 @@ impl GeminiCompletionRequest {
             system_instruction: sinstruction,
             contents: contents,
             generation_config: config,
+            stream: request.stream
         };
         debug!("GeminiCompletionRequest {:#?}", request);
         request
