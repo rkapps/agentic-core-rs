@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use tracing::debug;
 
 use crate::capabilities::model::CompletionRequest;
 
@@ -12,7 +11,6 @@ pub struct OpenAICompletionRequest {
     stream: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     previous_response_id: Option<String>,
-    // top_p: f32,
     max_output_tokens: i32,
     reasoning: OpenAICompletionRequestReasoning,
 }

@@ -8,6 +8,7 @@ pub struct HttpClient {
 }
 
 impl HttpClient {
+
     //new creates a new httpclient with the url
     pub fn new() -> Result<Self> {
         Ok(Self {
@@ -57,3 +58,4 @@ impl HttpClient {
         Ok(res)
     }
 }
+
