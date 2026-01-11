@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     agent::{Agent, AgentConfig},
     llm::client::LlmClient,
@@ -5,7 +7,7 @@ use crate::{
 use anyhow::Result;
 
 pub struct AgentBuilder {
-    client: Option<Box<dyn LlmClient>>,
+    client: Option<Arc<dyn LlmClient>>,
     temperature: Option<f32>,
     max_tokens: Option<i32>,
 }
@@ -20,7 +22,7 @@ impl AgentBuilder {
     }
 
     //set the client
-    pub fn client(mut self, client: Box<dyn LlmClient>) -> Self {
+    pub fn client(mut self, client: Arc<dyn LlmClient>) -> Self {
         self.client = Some(client);
         self
     }

@@ -1,15 +1,17 @@
 pub mod builder;
 
+use std::sync::Arc;
+
 use crate::{
     capabilities::completion::{CompletionRequest, CompletionResponse},
-    llm::client::LlmClient,
+    llm::client::{ChatStream, LlmClient},
 };
 use anyhow::Result;
 use tracing::debug;
 
 #[derive(Debug)]
 pub struct AgentConfig {
-    pub client: Box<dyn LlmClient>,
+    pub client: Arc<dyn LlmClient>,
     pub temperature: Option<f32>,
     pub max_tokens: Option<i32>,
 }
@@ -30,14 +32,11 @@ impl Agent {
 
     //complete defines a multi turn chat
     pub async fn complete(&self, request: CompletionRequest) -> Result<CompletionResponse> {
+        debug!("Completion Request: {:#?}", request);
+        self.config.client.complete(request).await
+    }
 
-        // info!("Completion with model: {:?}", self.model);
-        debug!("Request {:#?}", request);
-        match self.config.client.complete(request).await {
-            Ok(response) => Ok(response),
-            Err(e) => {
-                return Err(e);
-            }
-        }
+    pub async fn complete_with_stream(&self, request: CompletionRequest) -> Result<ChatStream> {
+        self.config.client.complete_with_stream(request).await
     }
 }
