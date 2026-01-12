@@ -5,10 +5,17 @@ use futures::StreamExt;
 use tracing::debug;
 
 use crate::{
-    capabilities::model::{ChatResponseChunk, CompletionRequest, CompletionResponse},
+    capabilities::{
+        client::completion::{CompletionStreamResponse, LlmClient},
+        completion::{
+            request::CompletionRequest,
+            response::{CompletionChunkResponse, CompletionResponse},
+        },
+    },
     http::HttpClient,
-    llm::{
-        client::{ChatStream, LlmClient}, gemini::model::{GeminiInteractionsChunkResponse, GeminiInteractionsRequest, GeminiInteractionsResponse},
+    providers::gemini::{
+        request::GeminiInteractionsRequest,
+        response::{GeminiInteractionsChunkResponse, GeminiInteractionsResponse},
     },
 };
 
@@ -100,7 +107,10 @@ impl LlmClient for GeminiClient {
         self.complete_interactions(request).await
     }
 
-    async fn complete_with_stream(&self, request: CompletionRequest) -> Result<ChatStream> {
+    async fn complete_with_stream(
+        &self,
+        request: CompletionRequest,
+    ) -> Result<CompletionStreamResponse> {
         let url = format!("{}/v1beta/interactions", self.base_url,);
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert("x-goog-api-key", self.api_key.parse()?);
@@ -113,49 +123,54 @@ impl LlmClient for GeminiClient {
             .post_stream_request(url, Some(headers), body)
             .await?;
 
+ // DEBUG: Check response before streaming
+ debug!("Response status: {}", response.status());
+ debug!("Response headers: {:?}", response.headers());
+ 
+ // Check content-type
+ if let Some(content_type) = response.headers().get("content-type") {
+     debug!("Content-Type: {:?}", content_type);
+     // Should be "text/event-stream"
+ }
+
         // debug!("Gemini Request: {:#?}", grequest);
         let stream = response
             .bytes_stream()
             .eventsource() // ← Parses SSE format
-            .map(|event_result| -> anyhow::Result<ChatResponseChunk> {
-
+            .map(|event_result| -> anyhow::Result<CompletionChunkResponse> {
                 let event = event_result?;
                 debug!("event: {:#?}", event.data);
 
                 if event.data.contains("[DONE]") {
-                    return Ok(ChatResponseChunk::default())
+                    return Ok(CompletionChunkResponse::default());
                 }
 
-                let chunk: GeminiInteractionsChunkResponse =
-                serde_json::from_str(&event.data).map_err(|e| {
-                    anyhow!(format!(
-                        "GeminiChunkResponse error: {:?} for data {:?}",
-                        e, &event.data
-                    ))
-                })?;
+                let chunk: GeminiInteractionsChunkResponse = serde_json::from_str(&event.data)
+                    .map_err(|e| {
+                        anyhow!(format!(
+                            "GeminiChunkResponse error: {:?} for data {:?}",
+                            e, &event.data
+                        ))
+                    })?;
 
                 // debug!("chunk: {:#?}", chunk);
                 match chunk.event_type.as_str() {
-                    "content.start" => Ok(ChatResponseChunk::default()),
+                    "content.start" => Ok(CompletionChunkResponse::default()),
                     "content.delta" => {
-
                         if let Some(delta) = chunk.delta {
                             if let Some(text) = delta.text {
-                                Ok( ChatResponseChunk::content(text, String::new()))
+                                Ok(CompletionChunkResponse::content(text, String::new()))
                             } else {
-                                Ok(ChatResponseChunk::default())
+                                Ok(CompletionChunkResponse::default())
                             }
-                            
                         } else {
-                            Ok(ChatResponseChunk::default())
+                            Ok(CompletionChunkResponse::default())
                         }
                     }
-                    "content.stop" => Ok(ChatResponseChunk::default()),
-                    "interaction.complete" => Ok(ChatResponseChunk::stop()),
-                    _ => Ok(ChatResponseChunk::default())
+                    "content.stop" => Ok(CompletionChunkResponse::default()),
+                    "interaction.complete" => Ok(CompletionChunkResponse::stop()),
+                    _ => Ok(CompletionChunkResponse::default()),
                 }
-
-
             });
 
         Ok(Box::pin(stream))

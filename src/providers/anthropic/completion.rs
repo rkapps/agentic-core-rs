@@ -2,16 +2,20 @@ use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use eventsource_stream::Eventsource;
 use futures::StreamExt;
-use tracing::debug;
+use tracing::{debug, error};
 
 use crate::{
-    capabilities::model::{ChatResponseChunk, CompletionRequest, CompletionResponse},
-    http::HttpClient,
-    llm::{
-        anthropic::model::{
-            AnthropicChunkResponse, AnthropicCompletionRequest, AnthropicCompletionResponse,
+    capabilities::{
+        client::completion::{CompletionStreamResponse, LlmClient},
+        completion::{
+            request::CompletionRequest,
+            response::{CompletionChunkResponse, CompletionResponse},
         },
-        client::{ChatStream, LlmClient},
+    },
+    http::HttpClient,
+    providers::anthropic::{
+        request::AnthropicCompletionRequest,
+        response::{AnthropicChunkResponse, AnthropicCompletionResponse},
     },
 };
 
@@ -26,12 +30,13 @@ pub struct AnthropicClient {
 pub const LLM: &str = "Anthropic";
 pub const MODEL_CLAUDE_SONNET_4_5: &str = "claude-sonnet-4-5";
 const ANTHROPIC_BASE_URL: &str = "https://api.anthropic.com";
+const ANTHROPIC_VERSION: &str = "2023-06-01";
 
 impl AnthropicClient {
-    pub fn new(api_key: String, anthropic_version: String) -> Result<Self> {
+    pub fn new(api_key: String) -> Result<Self> {
         Ok(Self {
             api_key: api_key,
-            anthropic_version: anthropic_version,
+            anthropic_version: ANTHROPIC_VERSION.to_string(),
             base_url: ANTHROPIC_BASE_URL.to_string(),
             http_client: HttpClient::new()?,
         })
@@ -61,11 +66,16 @@ impl LlmClient for AnthropicClient {
         Ok(cresponse)
     }
 
-    async fn complete_with_stream(&self, request: CompletionRequest) -> Result<ChatStream> {
+    async fn complete_with_stream(
+        &self,
+        request: CompletionRequest,
+    ) -> Result<CompletionStreamResponse> {
         let url = format!("{}/v1/messages", self.base_url);
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert("x-api-key", self.api_key.parse()?);
         headers.insert("anthropic-version", self.anthropic_version.parse()?);
+        headers.insert("Accept", "text/event-stream".parse()?);
+
         let arequest = AnthropicCompletionRequest::new(request);
         let body = serde_json::json!(arequest);
 
@@ -74,10 +84,17 @@ impl LlmClient for AnthropicClient {
             .post_stream_request(url, Some(headers), body)
             .await?;
 
+        // debug!("✅ Got response: {:?}", response.error_for_status());
+        if response.status() == 400 {
+            let error_body = response.text().await?;
+            error!("❌ API ERROR BODY: {}", error_body);
+            return Err(anyhow!("Bad request: {}", error_body));
+        }
+
         let stream = response
             .bytes_stream()
             .eventsource() // ← Parses SSE format
-            .map(|event_result| -> anyhow::Result<ChatResponseChunk> {
+            .map(|event_result| -> anyhow::Result<CompletionChunkResponse> {
                 let event = event_result?;
 
                 debug!("event: {:#?}", &event);
@@ -90,16 +107,19 @@ impl LlmClient for AnthropicClient {
                         ))
                     })?;
 
-                // Transform to ChatResponseChunk
+                // Transform to CompletionChunkResponse
                 match chunk.r#type.as_str() {
                     "content_block_delta" => {
                         let text = chunk.clone().delta.and_then(|d| d.text).unwrap_or_default();
                         let thinking = &chunk.delta.and_then(|d| d.thinking).unwrap_or_default();
 
-                        Ok(ChatResponseChunk::content(text.to_string(),thinking.to_string()))
+                        Ok(CompletionChunkResponse::content(
+                            text.to_string(),
+                            thinking.to_string(),
+                        ))
                     }
-                    "message_stop" => Ok(ChatResponseChunk::stop()),
-                    _ => Ok(ChatResponseChunk::default()),
+                    "message_stop" => Ok(CompletionChunkResponse::stop()),
+                    _ => Ok(CompletionChunkResponse::default()),
                 }
             });
 

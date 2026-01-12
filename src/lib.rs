@@ -1,4 +1,4 @@
-pub mod llm;
-pub mod agents;
+pub mod providers;
+pub mod agent;
 pub mod http;
 pub mod capabilities;

@@ -1,9 +1,7 @@
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use tracing::debug;
-use crate::{
-    capabilities::{model::CompletionRequest, messages::MessageRole},
-    llm::gemini::client::MODEL_GEMINI_3_FLASH_PREVIEW,
-};
+
+use crate::{capabilities::completion::{message::MessageRole, request::CompletionRequest}, providers::gemini::completion::MODEL_GEMINI_3_FLASH_PREVIEW};
 
 #[derive(Debug, Serialize)]
 pub struct GeminiInteractionsRequest {
@@ -14,33 +12,6 @@ pub struct GeminiInteractionsRequest {
     previous_interaction_id: Option<String>,
     system_instruction: String,
     stream: bool,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct GeminiInteractionsResponse {
-    pub id: String,
-    pub outputs: Vec<GeminiInteractionsResponseOutput>,
-    pub status: String,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct GeminiInteractionsResponseOutput {
-    #[serde(skip_serializing)]
-    pub signature: Option<String>,
-    pub text: Option<String>,
-    pub r#type: String,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct GeminiInteractionsChunkResponse {
-    pub event_type: String,
-    pub delta: Option<GeminiInteractionsChunkResponseDelta>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct GeminiInteractionsChunkResponseDelta {
-    pub r#type: String,
-    pub text: Option<String>,
 }
 
 impl GeminiInteractionsRequest {
@@ -79,13 +50,15 @@ impl GeminiInteractionsRequest {
     }
 }
 
+
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GeminiCompletionRequest {
     #[serde(rename = "system_instruction")] // Override to keep snake_case
     system_instruction: GeminiCompletionRequestSystemInstruction,
     contents: Vec<GeminiCompletionRequestContent>,
-    generation_config: GeminiCompletionConfig,
+    generation_config: GeminiCompletionRequestConfig,
     stream: bool,
 }
 
@@ -105,38 +78,14 @@ pub struct GeminiCompletionRequestPart {
     text: String,
 }
 
+
+
 #[derive(Debug, Serialize)]
-pub struct GeminiCompletionConfig {
+pub struct GeminiCompletionRequestConfig {
     temperature: f32,
     max_output_tokens: i32,
 }
 
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct GeminiResponse {
-    pub candidates: Vec<GeminiResponseCandidate>,
-    // model_version: String,
-    // response_id: String
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GeminiResponseCandidate {
-    pub content: GeminiResponseContent,
-    // finish_reason: String,
-    // index: i32
-}
-
-#[derive(Debug, Deserialize)]
-pub struct GeminiResponseContent {
-    pub parts: Vec<GeminiResponseContentPart>,
-    pub role: String,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct GeminiResponseContentPart {
-    pub text: String,
-}
 
 impl GeminiCompletionRequest {
     pub fn new(request: CompletionRequest) -> GeminiCompletionRequest {
@@ -165,7 +114,7 @@ impl GeminiCompletionRequest {
             };
             contents.push(content);
         }
-        let config = GeminiCompletionConfig {
+        let config = GeminiCompletionRequestConfig {
             temperature: request.temperature,
             max_output_tokens: request.max_tokens,
         };
@@ -181,3 +130,4 @@ impl GeminiCompletionRequest {
         request
     }
 }
+

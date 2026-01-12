@@ -1,16 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use crate::capabilities::messages::Message;
-
-#[derive(Debug)]
-pub struct CompletionRequest {
-    pub model: String,
-    pub system: Option<String>,
-    pub messages: Vec<Message>,
-    pub temperature: f32,
-    pub max_tokens: i32,
-    pub stream: bool,
-}
 
 #[derive(Debug)]
 pub struct CompletionResponse {
@@ -19,32 +8,32 @@ pub struct CompletionResponse {
 }
 
 #[derive(Serialize, Debug, Clone, Deserialize)]
-pub struct ChatResponseChunk {
+pub struct CompletionChunkResponse {
     pub content: String,
     pub thinking: String,
     pub is_final: bool,
 }
 
-impl ChatResponseChunk {
+impl CompletionChunkResponse {
     
-    pub fn default() -> ChatResponseChunk {
-        ChatResponseChunk {
+    pub fn default() -> CompletionChunkResponse {
+        CompletionChunkResponse {
             content: String::new(),
             thinking: String::new(),
             is_final: false,
         }
     }
 
-    pub fn stop() -> ChatResponseChunk {
-        ChatResponseChunk {
+    pub fn stop() -> CompletionChunkResponse {
+        CompletionChunkResponse {
             content: String::new(),
             thinking: String::new(),
             is_final: true,
         }
     }
 
-    pub fn content(content: String, thinking: String) -> ChatResponseChunk {
-        ChatResponseChunk {
+    pub fn content(content: String, thinking: String) -> CompletionChunkResponse {
+        CompletionChunkResponse {
             content: content,
             thinking: thinking,
             is_final: false,

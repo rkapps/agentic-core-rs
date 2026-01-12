@@ -1,15 +1,21 @@
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use eventsource_stream::Eventsource;
-use tracing::debug;
 use futures::StreamExt;
+use tracing::debug;
 
 use crate::{
-    capabilities::model::{ChatResponseChunk, CompletionRequest, CompletionResponse},
+    capabilities::{
+        client::completion::CompletionStreamResponse,
+        completion::{
+            request::CompletionRequest,
+            response::{CompletionChunkResponse, CompletionResponse},
+        },
+    },
     http::HttpClient,
-    llm::{
-        client::{ChatStream, LlmClient},
-        openai::model::{OpenAIChunkResponseData, OpenAICompletionRequest, OpenAICompletionResponse},
+    providers::openai::{
+        request::OpenAICompletionRequest,
+        response::{OpenAIChunkResponseData, OpenAICompletionResponse},
     },
 };
 
@@ -35,8 +41,7 @@ impl OpenAIClient {
 }
 
 #[async_trait]
-impl LlmClient for OpenAIClient {
-
+impl crate::capabilities::client::completion::LlmClient for OpenAIClient {
     async fn complete(&self, request: CompletionRequest) -> Result<CompletionResponse> {
         let url = format!("{}/v1/responses", self.base_url,);
 
@@ -46,7 +51,8 @@ impl LlmClient for OpenAIClient {
 
         let orequest = OpenAICompletionRequest::new(request);
         let body = serde_json::json!(orequest);
-        let oresponse = self.http_client
+        let oresponse = self
+            .http_client
             .post_request::<OpenAICompletionResponse>(url, Some(headers), body)
             .await?;
 
@@ -71,8 +77,7 @@ impl LlmClient for OpenAIClient {
         Ok(cresponse)
     }
 
-    async fn complete_with_stream(&self, request: CompletionRequest) -> Result<ChatStream> {
-
+    async fn complete_with_stream(&self, request: CompletionRequest) -> Result<CompletionStreamResponse> {
         let url = format!("{}/v1/responses", self.base_url,);
 
         let mut headers = reqwest::header::HeaderMap::new();
@@ -83,7 +88,8 @@ impl LlmClient for OpenAIClient {
 
         let request = OpenAICompletionRequest::new(request);
         let body = serde_json::json!(request);
-        let response = self.http_client
+        let response = self
+            .http_client
             .post_stream_request(url, Some(headers), body)
             .await?;
 
@@ -91,36 +97,33 @@ impl LlmClient for OpenAIClient {
         let stream = response
             .bytes_stream()
             .eventsource() // ← Parses SSE format
-            .map(|event_result| -> anyhow::Result<ChatResponseChunk> {
-
+            .map(|event_result| -> anyhow::Result<CompletionChunkResponse> {
                 let event = event_result?;
                 debug!("event: {:#?}", &event);
 
                 let chunk: OpenAIChunkResponseData =
-                serde_json::from_str(&event.data).map_err(|e| {
-                    anyhow!(format!(
-                        "OpenAIChunkResponse error: {:?} for data {:?}",
-                        e, &event.data
-                    ))
-                })?;
+                    serde_json::from_str(&event.data).map_err(|e| {
+                        anyhow!(format!(
+                            "OpenAIChunkResponse error: {:?} for data {:?}",
+                            e, &event.data
+                        ))
+                    })?;
 
-                 match event.event.as_str() {
+                match event.event.as_str() {
                     "response.output_text.delta" => {
-                            if let Some(delta) = chunk.delta {
-                               Ok(ChatResponseChunk::content(delta, String::new()))
-                            } else {
-                                Ok(ChatResponseChunk::default())
-                            }
+                        if let Some(delta) = chunk.delta {
+                            Ok(CompletionChunkResponse::content(delta, String::new()))
+                        } else {
+                            Ok(CompletionChunkResponse::default())
+                        }
                     }
-                    "response.output_text.done" => {
-                        Ok(ChatResponseChunk::stop())
-                    }
-                    _ => Ok(ChatResponseChunk::default())
-                 }
-
+                    "response.output_text.done" => Ok(CompletionChunkResponse::stop()),
+                    _ => Ok(CompletionChunkResponse::default()),
+                }
             });
 
-        Ok(Box::pin(stream))
+        debug!("done streaming");
 
+        Ok(Box::pin(stream))
     }
 }

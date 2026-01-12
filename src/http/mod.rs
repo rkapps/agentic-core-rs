@@ -23,6 +23,7 @@ impl HttpClient {
         headers: Option<reqwest::header::HeaderMap>,
         body: serde_json::Value,
     ) -> Result<T> {
+        debug!("Urs: {}", url);
         let mut request = self.client.post(url);
 
         if let Some(h) = headers {
@@ -48,7 +49,17 @@ impl HttpClient {
         headers: Option<reqwest::header::HeaderMap>,
         body: serde_json::Value,
     ) -> reqwest::Result<reqwest::Response> {
+
+
+        debug!("Url: {}", url);
         let mut request = self.client.post(url);
+
+        // let mut sheaders = reqwest::header::HeaderMap::new();
+        // sheaders.insert("accept", "text/event-stream".parse()?);
+        // // let mut h = headers.unwrap_or_default();
+        // request.headers(sheaders);         
+        // // request.headersinsert("Accept", );
+
         if let Some(h) = headers {
             request = request.headers(h);
         }
