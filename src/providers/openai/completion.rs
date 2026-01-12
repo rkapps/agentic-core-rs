@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use eventsource_stream::Eventsource;
 use futures::StreamExt;
-use tracing::debug;
+use tracing::{debug, error};
 
 use crate::{
     capabilities::{
@@ -77,8 +77,12 @@ impl crate::capabilities::client::completion::LlmClient for OpenAIClient {
         Ok(cresponse)
     }
 
-    async fn complete_with_stream(&self, request: CompletionRequest) -> Result<CompletionStreamResponse> {
+    async fn complete_with_stream(
+        &self,
+        request: CompletionRequest,
+    ) -> Result<CompletionStreamResponse> {
         let url = format!("{}/v1/responses", self.base_url,);
+        debug!("OpenAI Request: {:#?}", request);
 
         let mut headers = reqwest::header::HeaderMap::new();
         let bearer = format!("Bearer {}", self.api_key);
@@ -93,7 +97,13 @@ impl crate::capabilities::client::completion::LlmClient for OpenAIClient {
             .post_stream_request(url, Some(headers), body)
             .await?;
 
-        debug!("OpenAI Request: {:#?}", request);
+        // debug!("✅ Got response: {:?}", response.error_for_status());
+        if response.status() == 400 {
+            let error_body = response.text().await?;
+            error!("❌ API ERROR BODY: {}", error_body);
+            return Err(anyhow!("Bad request: {}", error_body));
+        }
+
         let stream = response
             .bytes_stream()
             .eventsource() // ← Parses SSE format
@@ -121,7 +131,7 @@ impl crate::capabilities::client::completion::LlmClient for OpenAIClient {
                         if let Some(response) = chunk.response {
                             Ok(CompletionChunkResponse::stop(response.id))
                         } else {
-                            Ok(CompletionChunkResponse::default())   
+                            Ok(CompletionChunkResponse::default())
                         }
                     }
                     _ => Ok(CompletionChunkResponse::default()),

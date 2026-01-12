@@ -71,6 +71,8 @@ impl LlmClient for AnthropicClient {
         request: CompletionRequest,
     ) -> Result<CompletionStreamResponse> {
         let url = format!("{}/v1/messages", self.base_url);
+        debug!("Gemini Request: {:#?}", request);
+
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert("x-api-key", self.api_key.parse()?);
         headers.insert("anthropic-version", self.anthropic_version.parse()?);

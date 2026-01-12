@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use eventsource_stream::Eventsource;
 use futures::StreamExt;
-use tracing::debug;
+use tracing::{debug, error};
 
 use crate::{
     capabilities::{
@@ -112,6 +112,8 @@ impl LlmClient for GeminiClient {
         request: CompletionRequest,
     ) -> Result<CompletionStreamResponse> {
         let url = format!("{}/v1beta/interactions", self.base_url,);
+        debug!("Gemini Request: {:#?}", request);
+
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert("x-goog-api-key", self.api_key.parse()?);
 
@@ -123,15 +125,11 @@ impl LlmClient for GeminiClient {
             .post_stream_request(url, Some(headers), body)
             .await?;
 
- // DEBUG: Check response before streaming
- debug!("Response status: {}", response.status());
- debug!("Response headers: {:?}", response.headers());
- 
- // Check content-type
- if let Some(content_type) = response.headers().get("content-type") {
-     debug!("Content-Type: {:?}", content_type);
-     // Should be "text/event-stream"
- }
+        if response.status() == 400 {
+            let error_body = response.text().await?;
+            error!("❌ API ERROR BODY: {}", error_body);
+            return Err(anyhow!("Bad request: {}", error_body));
+        }
 
         // debug!("Gemini Request: {:#?}", grequest);
         let stream = response
@@ -172,9 +170,8 @@ impl LlmClient for GeminiClient {
                         if let Some(interaction) = chunk.interaction {
                             Ok(CompletionChunkResponse::stop(interaction.id))
                         } else {
-                            Ok(CompletionChunkResponse::default())   
+                            Ok(CompletionChunkResponse::default())
                         }
-
                     }
                     _ => Ok(CompletionChunkResponse::default()),
                 }
