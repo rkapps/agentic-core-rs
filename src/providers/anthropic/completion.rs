@@ -59,7 +59,7 @@ impl LlmClient for AnthropicClient {
             .post_request::<AnthropicCompletionResponse>(url, Some(headers), body)
             .await?;
         let cresponse = CompletionResponse {
-            id: String::new(),
+            response_id: String::new(),
             content: aresponse.content[0].text.to_string(),
         };
 
@@ -118,7 +118,7 @@ impl LlmClient for AnthropicClient {
                             thinking.to_string(),
                         ))
                     }
-                    "message_stop" => Ok(CompletionChunkResponse::stop()),
+                    "message_stop" => Ok(CompletionChunkResponse::stop(String::new())),
                     _ => Ok(CompletionChunkResponse::default()),
                 }
             });

@@ -35,6 +35,11 @@ pub struct OpentAIChunkResponse {
 #[derive(Debug, Deserialize)]
 pub struct OpenAIChunkResponseData {
     pub r#type: String,
+    pub response: Option<OpenAIChunkResponseDataResponse>,
     pub delta: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct OpenAIChunkResponseDataResponse {
+    pub id: String
+}

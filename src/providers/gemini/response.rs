@@ -19,6 +19,7 @@ pub struct GeminiInteractionsResponseOutput {
 pub struct GeminiInteractionsChunkResponse {
     pub event_type: String,
     pub delta: Option<GeminiInteractionsChunkResponseDelta>,
+    pub interaction: Option<GeminiInteractionsChunkResponseInteraction>
 }
 
 #[derive(Debug, Deserialize)]
@@ -26,6 +27,13 @@ pub struct GeminiInteractionsChunkResponseDelta {
     pub r#type: String,
     pub text: Option<String>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct GeminiInteractionsChunkResponseInteraction {
+    pub id: String
+}
+
+
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]

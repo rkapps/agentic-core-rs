@@ -93,7 +93,7 @@ impl GeminiClient {
         }
 
         let cresponse = CompletionResponse {
-            id: id,
+            response_id: id,
             content: message,
         };
 
@@ -168,7 +168,14 @@ impl LlmClient for GeminiClient {
                         }
                     }
                     "content.stop" => Ok(CompletionChunkResponse::default()),
-                    "interaction.complete" => Ok(CompletionChunkResponse::stop()),
+                    "interaction.complete" => {
+                        if let Some(interaction) = chunk.interaction {
+                            Ok(CompletionChunkResponse::stop(interaction.id))
+                        } else {
+                            Ok(CompletionChunkResponse::default())   
+                        }
+
+                    }
                     _ => Ok(CompletionChunkResponse::default()),
                 }
             });

@@ -56,7 +56,7 @@ impl crate::capabilities::client::completion::LlmClient for OpenAIClient {
             .post_request::<OpenAICompletionResponse>(url, Some(headers), body)
             .await?;
 
-        debug!("OpenAICompletionResponse: {:?}", oresponse);
+        debug!("OpenAICompletionResponse: {:#?}", oresponse);
         let id = oresponse.id;
         let mut message = String::new();
         for output in oresponse.output {
@@ -70,7 +70,7 @@ impl crate::capabilities::client::completion::LlmClient for OpenAIClient {
         }
 
         let cresponse = CompletionResponse {
-            id: id,
+            response_id: id,
             content: message,
         };
 
@@ -117,7 +117,13 @@ impl crate::capabilities::client::completion::LlmClient for OpenAIClient {
                             Ok(CompletionChunkResponse::default())
                         }
                     }
-                    "response.output_text.done" => Ok(CompletionChunkResponse::stop()),
+                    "response.completed" => {
+                        if let Some(response) = chunk.response {
+                            Ok(CompletionChunkResponse::stop(response.id))
+                        } else {
+                            Ok(CompletionChunkResponse::default())   
+                        }
+                    }
                     _ => Ok(CompletionChunkResponse::default()),
                 }
             });
