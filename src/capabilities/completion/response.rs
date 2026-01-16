@@ -1,11 +1,21 @@
 use serde::{Deserialize, Serialize};
+use crate::capabilities::completion::tool::ToolCallRequest;
 
 
 #[derive(Debug, Clone)]
 pub struct CompletionResponse {
     pub response_id: String,
-    pub content: String,
+    pub contents: Vec<CompletionResponseContent>,
 }
+
+
+#[derive(Debug, Clone)]
+pub enum CompletionResponseContent {
+    Text(String),
+    Thought(String),
+    ToolCall(ToolCallRequest)
+}
+
 
 #[derive(Serialize, Debug, Clone, Deserialize)]
 pub struct CompletionChunkResponse {
@@ -14,6 +24,8 @@ pub struct CompletionChunkResponse {
     pub thinking: String,
     pub is_final: bool,
 }
+
+
 
 impl CompletionChunkResponse {
     

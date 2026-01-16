@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use serde_json::Value;
 
 #[derive(Debug, Deserialize)]
 pub struct GeminiInteractionsResponse {
@@ -7,19 +8,28 @@ pub struct GeminiInteractionsResponse {
     pub status: String,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct GeminiInteractionsResponseOutput {
-    #[serde(skip_serializing)]
-    pub signature: Option<String>,
-    pub text: Option<String>,
-    pub r#type: String,
+#[derive(Deserialize, Debug)]
+#[serde(tag = "type")]
+pub enum GeminiInteractionsResponseOutput {
+    #[serde(rename = "text")]
+    Text { text: String },
+
+    #[serde(rename = "thought")]
+    Thought { signature: String },
+
+    #[serde(rename = "function_call")]
+    FunctionCall {
+        id: String,
+        arguements: Value,
+        name: String,
+    },
 }
 
 #[derive(Debug, Deserialize)]
 pub struct GeminiInteractionsChunkResponse {
     pub event_type: String,
     pub delta: Option<GeminiInteractionsChunkResponseDelta>,
-    pub interaction: Option<GeminiInteractionsChunkResponseInteraction>
+    pub interaction: Option<GeminiInteractionsChunkResponseInteraction>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -30,10 +40,8 @@ pub struct GeminiInteractionsChunkResponseDelta {
 
 #[derive(Debug, Deserialize)]
 pub struct GeminiInteractionsChunkResponseInteraction {
-    pub id: String
+    pub id: String,
 }
-
-
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]

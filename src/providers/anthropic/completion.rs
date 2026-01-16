@@ -9,13 +9,17 @@ use crate::{
         client::completion::{CompletionStreamResponse, LlmClient},
         completion::{
             request::CompletionRequest,
-            response::{CompletionChunkResponse, CompletionResponse},
+            response::{CompletionChunkResponse, CompletionResponse, CompletionResponseContent},
+            tool::ToolCallRequest,
         },
     },
     http::HttpClient,
     providers::anthropic::{
         request::AnthropicCompletionRequest,
-        response::{AnthropicChunkResponse, AnthropicCompletionResponse},
+        response::{
+            AnthropicChunkResponse, AnthropicCompletionResponse,
+            AnthropicCompletionResponseContent::{Text, ToolUse},
+        },
     },
 };
 
@@ -52,15 +56,36 @@ impl LlmClient for AnthropicClient {
         headers.insert("x-api-key", self.api_key.parse()?);
         headers.insert("anthropic-version", self.anthropic_version.parse()?);
 
-        let arequest = AnthropicCompletionRequest::new(request);
+        let arequest = AnthropicCompletionRequest::new(request)?;
         let body = serde_json::json!(arequest);
         let aresponse = self
             .http_client
             .post_request::<AnthropicCompletionResponse>(url, Some(headers), body)
             .await?;
+
+        debug!("Response: {:#?}", aresponse);
+
+        let mut rcontents: Vec<CompletionResponseContent> = Vec::new();
+        for content in aresponse.content {
+            match content {
+                Text { text } => {
+                    let rcontent = CompletionResponseContent::Text(text);
+                    rcontents.push(rcontent);
+                }
+                ToolUse { id, name, input } => {
+                    let rcontent = CompletionResponseContent::ToolCall(ToolCallRequest {
+                        id,
+                        name,
+                        arguements: input,
+                    });
+                    rcontents.push(rcontent);
+                }
+            }
+        }
+
         let cresponse = CompletionResponse {
             response_id: String::new(),
-            content: aresponse.content[0].text.to_string(),
+            contents: rcontents,
         };
 
         Ok(cresponse)
@@ -78,7 +103,7 @@ impl LlmClient for AnthropicClient {
         headers.insert("anthropic-version", self.anthropic_version.parse()?);
         headers.insert("Accept", "text/event-stream".parse()?);
 
-        let arequest = AnthropicCompletionRequest::new(request);
+        let arequest = AnthropicCompletionRequest::new(request)?;
         let body = serde_json::json!(arequest);
 
         let response = self

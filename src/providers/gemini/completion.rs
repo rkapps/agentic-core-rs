@@ -9,13 +9,17 @@ use crate::{
         client::completion::{CompletionStreamResponse, LlmClient},
         completion::{
             request::CompletionRequest,
-            response::{CompletionChunkResponse, CompletionResponse},
+            response::{CompletionChunkResponse, CompletionResponse, CompletionResponseContent},
+            tool::ToolCallRequest,
         },
     },
     http::HttpClient,
     providers::gemini::{
         request::GeminiInteractionsRequest,
-        response::{GeminiInteractionsChunkResponse, GeminiInteractionsResponse},
+        response::{
+            GeminiInteractionsChunkResponse, GeminiInteractionsResponse,
+            GeminiInteractionsResponseOutput::{FunctionCall, Text, Thought},
+        },
     },
 };
 
@@ -74,27 +78,49 @@ impl GeminiClient {
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert("x-goog-api-key", self.api_key.parse()?);
 
-        let grequest = GeminiInteractionsRequest::new(request);
+        let grequest = GeminiInteractionsRequest::new(request)?;
+        debug!("GeminiCompletionRequest: {:#?}", grequest);
+
         let body = serde_json::json!(grequest);
-        debug!("Body: {:#?}", body);
         let gresponse = self
             .http_client
             .post_request::<GeminiInteractionsResponse>(url, Some(headers), body)
             .await?;
 
+        debug!("GeminiCompletionResponse: {:#?}", gresponse);
+
         let id = gresponse.id;
-        let mut message = String::new();
+        let mut rcontents: Vec<CompletionResponseContent> = Vec::new();
+
         for output in gresponse.outputs {
-            if output.r#type == "text" {
-                if let Some(value) = output.text {
-                    message = value;
+            match output {
+                Text { text } => {
+                    let rcontent = CompletionResponseContent::Text(text);
+                    rcontents.push(rcontent);
+                }
+                FunctionCall {
+                    arguements,
+                    id,
+                    name,
+                } => {
+                    let rcontent = CompletionResponseContent::ToolCall(ToolCallRequest {
+                        id,
+                        name,
+                        arguements,
+                    });
+                    rcontents.push(rcontent);
+                }
+                Thought { signature } => {
+                    let rcontent: CompletionResponseContent =
+                        CompletionResponseContent::Thought(signature);
+                    rcontents.push(rcontent);
                 }
             }
         }
 
         let cresponse = CompletionResponse {
             response_id: id,
-            content: message,
+            contents: rcontents,
         };
 
         Ok(cresponse)
@@ -117,7 +143,7 @@ impl LlmClient for GeminiClient {
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert("x-goog-api-key", self.api_key.parse()?);
 
-        let grequest = GeminiInteractionsRequest::new(request);
+        let grequest = GeminiInteractionsRequest::new(request)?;
         let body = serde_json::json!(grequest);
         debug!("Body: {:#?}", body);
         let response = self

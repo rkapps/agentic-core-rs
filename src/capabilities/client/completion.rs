@@ -23,4 +23,5 @@ pub trait LlmClient: Send + Sync + std::fmt::Debug {
     async fn complete(&self, request: CompletionRequest) -> Result<CompletionResponse>;
     // async fn complete_with_streaming(&self, request: CompletionRequest) -> Result<()>;
     async fn complete_with_stream(&self, request: CompletionRequest) -> Result<CompletionStreamResponse>;
+
 }

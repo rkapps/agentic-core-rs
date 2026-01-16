@@ -4,7 +4,7 @@ use anyhow::Result;
 
 use crate::{
     agent::completion::Agent,
-    capabilities::client::completion::LlmClient,
+    capabilities::client::{completion::LlmClient, tool::ToolRegistry},
 };
 
 const MODEL_TEMPERATURE: f32 = 0.5;
@@ -15,6 +15,7 @@ pub struct AgentBuilder {
     api_key: String,
     temperature: Option<f32>,
     max_tokens: Option<i32>,
+    tool_registry: ToolRegistry,
 }
 
 impl AgentBuilder {
@@ -24,11 +25,12 @@ impl AgentBuilder {
             api_key: String::new(),
             temperature: None,
             max_tokens: None,
+            tool_registry: ToolRegistry::new(),
         }
     }
 
     pub fn with_client(mut self, client: Option<Arc<dyn LlmClient>>) -> Self {
-        self.client =client;
+        self.client = client;
         self
     }
 
@@ -49,22 +51,26 @@ impl AgentBuilder {
         self
     }
 
+    pub fn with_tool_registry(mut self, tool_registry: ToolRegistry) -> Self {
+        self.tool_registry = tool_registry;
+        self
+    }
+
     //build the agent and take ownership
     pub fn build(self) -> Result<Agent> {
-
         // find the client
         let client = self
             .client
             .ok_or_else(|| anyhow::anyhow!("Client is required"))?;
 
-        let temperature: f32 = self.temperature.unwrap_or( MODEL_TEMPERATURE);
-        let max_tokens = self.max_tokens.unwrap_or( MODEL_MAX_TOKENS);
+        let temperature: f32 = self.temperature.unwrap_or(MODEL_TEMPERATURE);
+        let max_tokens = self.max_tokens.unwrap_or(MODEL_MAX_TOKENS);
 
         Ok(Agent {
             client,
             temperature,
             max_tokens,
+            tool_registry: self.tool_registry,
         })
     }
-
 }

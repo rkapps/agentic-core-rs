@@ -2,6 +2,7 @@ use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use eventsource_stream::Eventsource;
 use futures::StreamExt;
+use serde_json::Value;
 use tracing::{debug, error};
 
 use crate::{
@@ -9,13 +10,16 @@ use crate::{
         client::completion::CompletionStreamResponse,
         completion::{
             request::CompletionRequest,
-            response::{CompletionChunkResponse, CompletionResponse},
+            response::{CompletionChunkResponse, CompletionResponse, CompletionResponseContent}, tool::ToolCallRequest,
         },
     },
     http::HttpClient,
     providers::openai::{
         request::OpenAICompletionRequest,
-        response::{OpenAIChunkResponseData, OpenAICompletionResponse},
+        response::{
+            OpenAIChunkResponseData, OpenAICompletionResponse,
+            OpenAICompletionResponseOutput::{FunctionCall, Message, Reasoning},
+        },
     },
 };
 
@@ -49,29 +53,72 @@ impl crate::capabilities::client::completion::LlmClient for OpenAIClient {
         let bearer = format!("Bearer {}", self.api_key);
         headers.insert("Authorization", bearer.parse()?);
 
-        let orequest = OpenAICompletionRequest::new(request);
+        let orequest = OpenAICompletionRequest::new(request)?;
+        debug!("OpenAICompletionRequest: {:#?}", orequest);
         let body = serde_json::json!(orequest);
+        debug!("Body: {:#?}", body);
         let oresponse = self
             .http_client
             .post_request::<OpenAICompletionResponse>(url, Some(headers), body)
             .await?;
 
         debug!("OpenAICompletionResponse: {:#?}", oresponse);
+
+        let mut rcontents: Vec<CompletionResponseContent> = Vec::new();
         let id = oresponse.id;
-        let mut message = String::new();
+
         for output in oresponse.output {
-            if output.r#type == "message" {
-                for content in output.content {
-                    if content.r#type == "output_text" {
-                        message = content.text;
+            match output {
+                Message {
+                    id: _,
+                    status,
+                    content,
+                } => {
+                    if status == "completed" {
+                        for content in content {
+                            if content.r#type == "output_text" {
+                                let rcontent= CompletionResponseContent::Text(content.text);
+                                rcontents.push(rcontent);
+                                break;
+                            }
+                        }
                     }
                 }
+                FunctionCall {
+                    status,
+                    arguements,
+                    call_id,
+                    name,
+                } => {
+                    if status == "completed" {
+                        let arguements: Value = match serde_json::from_str(arguements.as_str()) {
+                            Ok(c) => c,
+                            Err(e) => {
+                                return Err(anyhow!("Error parsing function arguements: {:#?}", e))
+                            }
+                        };
+
+                        let rcontent = CompletionResponseContent::ToolCall(ToolCallRequest {
+                            id : call_id,
+                            name,
+                           arguements : arguements,
+                        });                        
+                        rcontents.push(rcontent);
+                    }
+                }
+                Reasoning{
+                    id:_,
+                    summary:_
+                } => {
+                    
+                }
+                
             }
         }
 
         let cresponse = CompletionResponse {
             response_id: id,
-            content: message,
+            contents: rcontents,
         };
 
         Ok(cresponse)
@@ -90,7 +137,7 @@ impl crate::capabilities::client::completion::LlmClient for OpenAIClient {
         headers.insert("Accept", "text/event-stream".parse()?);
         headers.insert("Accept-Encoding", "identity".parse()?);
 
-        let request = OpenAICompletionRequest::new(request);
+        let request = OpenAICompletionRequest::new(request)?;
         let body = serde_json::json!(request);
         let response = self
             .http_client

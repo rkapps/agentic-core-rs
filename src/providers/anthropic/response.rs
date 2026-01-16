@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use serde_json::Value;
 
 
 
@@ -9,10 +10,22 @@ pub struct AnthropicCompletionResponse {
     pub content: Vec<AnthropicCompletionResponseContent>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct AnthropicCompletionResponseContent {
-    pub r#type: String,
-    pub text: String,
+#[derive(Deserialize, Debug)]
+#[serde(tag = "type")]
+pub enum AnthropicCompletionResponseContent {
+
+    #[serde(rename = "text")]
+    Text {
+        text: String
+    },
+
+    #[serde(rename = "tool_use")]
+    ToolUse {
+        id: String,
+        input: Value,
+        name: String
+    },
+    
 }
 
 #[derive(Debug, Deserialize, Clone)]

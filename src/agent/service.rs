@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use crate::{
     agent::{builder::AgentBuilder, completion::Agent},
-    capabilities::client::completion::LlmClient,
+    capabilities::client::{completion::LlmClient, tool::ToolRegistry},
     providers::{
         anthropic::{self, completion::AnthropicClient},
         gemini::{self, completion::GeminiClient},
@@ -23,18 +23,22 @@ pub struct AgentService {
     openai_client: Option<Arc<dyn LlmClient>>,
     gemini_client: Option<Arc<dyn LlmClient>>,
     anthropic_client: Option<Arc<dyn LlmClient>>,
+
+    //Arc<RwLock allows interior mutability
+    tool_registry: ToolRegistry,
 }
 
 impl AgentService {
-    pub fn new() -> AgentService {
+    pub fn new(tool_registry: ToolRegistry) -> AgentService {
         Self {
             openai_client: None,
             gemini_client: None,
             anthropic_client: None,
+            tool_registry: tool_registry,
         }
     }
 
-    pub fn set_client(&mut self, llm: &str, api_key: &str) -> Result<()> {
+    pub fn register_client(&mut self, llm: &str, api_key: &str) -> Result<()> {
         match llm {
             "Anthropic" => {
                 let client = AnthropicClient::new(api_key.to_string())
@@ -73,11 +77,11 @@ impl AgentService {
             .with_client(client)
             .with_temperature(0.5)
             .with_max_tokens(10000)
+            .with_tool_registry(self.tool_registry.clone())
             .build()?;
 
         Ok(Arc::new(agent))
     }
-
 
     pub fn get_llm_providers(&self) -> Vec<LlmProvider> {
         let mut providers: Vec<LlmProvider> = Vec::new();
@@ -104,5 +108,4 @@ impl AgentService {
 
         providers
     }
-
 }

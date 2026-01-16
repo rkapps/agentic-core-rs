@@ -9,20 +9,37 @@ pub struct OpenAICompletionResponse {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct OpenAICompletionResponseOutput {
-    pub r#type: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub status: Option<String>,
-    #[serde(default)]
-    pub content: Vec<OpenAICompletionResponseContent>,
-    #[serde(default)]
-    pub role: String,
+#[serde(tag = "type")]
+pub enum OpenAICompletionResponseOutput {
+
+    #[serde(rename = "message")]
+    Message {
+        id: String,
+        status: String,
+        content: Vec<OpenAICompletionResponseContent>
+    },
+
+    #[serde(rename = "function_call")]
+    FunctionCall {
+        status: String,
+        arguements: String,
+        call_id: String,
+        name: String
+    },
+
+    #[serde(rename = "reasoning")]
+    Reasoning {
+        id: String,
+        summary: Vec<String>,
+    },
+
 }
 
 #[derive(Deserialize, Debug)]
 pub struct OpenAICompletionResponseContent {
     pub r#type: String,
     pub text: String,
+    
 }
 
 #[derive(Debug, Deserialize)]
