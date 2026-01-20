@@ -56,7 +56,7 @@ async fn main() -> Result<()> {
     };
 
     // Create agent
-    let agent = agent_service.get_chat_agent(llm)?;
+    let agent = agent_service.get_completion_agent(llm)?;
     let mut response = agent.complete(request).await?;
 
     //create turn message using the response id

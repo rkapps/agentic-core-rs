@@ -72,7 +72,7 @@ impl AgentService {
         self.mcp_registry = Some(Arc::new(mcp_registry));
     }
 
-    pub fn get_chat_agent(&self, llm: &str) -> Result<Arc<Agent>> {
+    pub fn get_completion_agent(&self, llm: &str) -> Result<Arc<Agent>> {
         //get client
         let client = match llm {
             openai::completion::LLM => self.openai_client.clone(),
@@ -80,7 +80,6 @@ impl AgentService {
             anthropic::completion::LLM => self.anthropic_client.clone(),
             _ => None,
         };
-        // .ok_or_else(|| anyhow::anyhow!("Llm client for '{}' is not supported", llm))?;
 
         // Build the Agent
         let agent = AgentBuilder::new()

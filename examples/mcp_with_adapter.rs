@@ -78,7 +78,7 @@ async fn main() -> Result<()> {
         definitions: tools,
     };
 
-    let agent = agent_service.get_chat_agent(llm)?;
+    let agent = agent_service.get_completion_agent(llm)?;
 
     let response = agent.complete_with_tools(request).await?;
     debug!("Response: {:#?}", response);
