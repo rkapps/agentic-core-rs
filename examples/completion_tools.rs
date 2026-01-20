@@ -87,7 +87,7 @@ async fn main() -> Result<()> {
 pub struct TestTool {}
 #[derive(Deserialize)]
 struct Weather {
-    location: String,
+    _location: String,
 }
 
 #[async_trait]
@@ -116,7 +116,6 @@ impl Tool for TestTool {
     }
 
     async fn execute(&self, value: serde_json::Value) -> Result<Value> {
-        // todo!()
         let _: Weather = match serde_json::from_value(value.clone()) {
             Ok(c) => c,
             Err(e) => {
