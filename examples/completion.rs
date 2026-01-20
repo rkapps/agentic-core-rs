@@ -11,7 +11,7 @@ use std::env;
 async fn main() -> Result<()> {
 
     let filter = filter::Targets::new()
-        .with_target("agentic_core::providers::openai", Level::DEBUG);
+        .with_target("agentic_core::providers::gemini", Level::DEBUG);
 
      tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer().compact().pretty())  // Compact format
@@ -22,15 +22,15 @@ async fn main() -> Result<()> {
     let mut agent_service = AgentService::new();
     agent_service.register_tool(tool_registry);
 
-    // let api_key =
-    //     env::var("GEMINI_API_KEY").expect("GEMINI_API_KEY environment variable not set");
-    // let llm = gemini::completion::LLM;
-    // let model = gemini::completion::MODEL_GEMINI_3_FLASH_PREVIEW;
-
     let api_key =
-        env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY environment variable not set");
-    let llm = openai::completion::LLM;
-    let model = openai::completion::MODEL_GPT_5_NANO;
+        env::var("GEMINI_API_KEY").expect("GEMINI_API_KEY environment variable not set");
+    let llm = gemini::completion::LLM;
+    let model = gemini::completion::MODEL_GEMINI_3_FLASH_PREVIEW;
+
+    // let api_key =
+    //     env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY environment variable not set");
+    // let llm = openai::completion::LLM;
+    // let model = openai::completion::MODEL_GPT_5_NANO;
 
     // let api_key =
     //     env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY environment variable not set");
@@ -74,7 +74,7 @@ async fn main() -> Result<()> {
         definitions: Vec::new(),
     };
 
-    response = agent.complete(request).await?;
+    let _ = agent.complete(request).await?;
 
     Ok(())
 }
