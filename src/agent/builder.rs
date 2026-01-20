@@ -4,7 +4,7 @@ use anyhow::Result;
 
 use crate::{
     agent::completion::Agent,
-    capabilities::client::{completion::LlmClient, tool::ToolRegistry},
+    capabilities::{client::completion::LlmClient, completion::{mcp::MCPRegistry, tool::ToolRegistry}},
 };
 
 const MODEL_TEMPERATURE: f32 = 0.5;
@@ -15,7 +15,8 @@ pub struct AgentBuilder {
     api_key: String,
     temperature: Option<f32>,
     max_tokens: Option<i32>,
-    tool_registry: ToolRegistry,
+    tool_registry: Option<Arc<ToolRegistry>>,
+    mcp_registry: Option<Arc<MCPRegistry>>,
 }
 
 impl AgentBuilder {
@@ -25,7 +26,8 @@ impl AgentBuilder {
             api_key: String::new(),
             temperature: None,
             max_tokens: None,
-            tool_registry: ToolRegistry::new(),
+            tool_registry: None,
+            mcp_registry: None
         }
     }
 
@@ -51,8 +53,13 @@ impl AgentBuilder {
         self
     }
 
-    pub fn with_tool_registry(mut self, tool_registry: ToolRegistry) -> Self {
+    pub fn with_tool_registry(mut self, tool_registry: Option<Arc<ToolRegistry>>) -> Self {
         self.tool_registry = tool_registry;
+        self
+    }
+
+    pub fn with_mcp_registry(mut self, mcp_registry: Option<Arc<MCPRegistry>>) -> Self {
+        self.mcp_registry = mcp_registry;
         self
     }
 
@@ -65,12 +72,15 @@ impl AgentBuilder {
 
         let temperature: f32 = self.temperature.unwrap_or(MODEL_TEMPERATURE);
         let max_tokens = self.max_tokens.unwrap_or(MODEL_MAX_TOKENS);
+        let tool_registry = self.tool_registry.unwrap_or(Arc::new(ToolRegistry::new()));
+        let mcp_registry = self.mcp_registry.unwrap_or(Arc::new(MCPRegistry::new()));
 
         Ok(Agent {
             client,
             temperature,
             max_tokens,
-            tool_registry: self.tool_registry,
+            tool_registry,
+            mcp_registry
         })
     }
 }

@@ -22,7 +22,7 @@ pub enum OpenAICompletionResponseOutput {
     #[serde(rename = "function_call")]
     FunctionCall {
         status: String,
-        arguements: String,
+        arguments: String,
         call_id: String,
         name: String
     },

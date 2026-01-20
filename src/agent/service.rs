@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use crate::{
     agent::{builder::AgentBuilder, completion::Agent},
-    capabilities::client::{completion::LlmClient, tool::ToolRegistry},
+    capabilities::{client::completion::LlmClient, completion::{mcp::MCPRegistry, tool::ToolRegistry}},
     providers::{
         anthropic::{self, completion::AnthropicClient},
         gemini::{self, completion::GeminiClient},
@@ -25,16 +25,18 @@ pub struct AgentService {
     anthropic_client: Option<Arc<dyn LlmClient>>,
 
     //Arc<RwLock allows interior mutability
-    tool_registry: ToolRegistry,
+    tool_registry: Option<Arc<ToolRegistry>>,
+    mcp_registry: Option<Arc<MCPRegistry>>
 }
 
 impl AgentService {
-    pub fn new(tool_registry: ToolRegistry) -> AgentService {
+    pub fn new() -> AgentService {
         Self {
             openai_client: None,
             gemini_client: None,
             anthropic_client: None,
-            tool_registry: tool_registry,
+            tool_registry: None,
+            mcp_registry: None
         }
     }
 
@@ -62,6 +64,14 @@ impl AgentService {
         Ok(())
     }
 
+    pub fn register_tool(&mut self, tool_registry: ToolRegistry) {
+        self.tool_registry = Some(Arc::new(tool_registry));
+    }
+
+    pub fn register_mcp(&mut self, mcp_registry: MCPRegistry) {
+        self.mcp_registry = Some(Arc::new(mcp_registry));
+    }
+
     pub fn get_chat_agent(&self, llm: &str) -> Result<Arc<Agent>> {
         //get client
         let client = match llm {
@@ -78,6 +88,7 @@ impl AgentService {
             .with_temperature(0.5)
             .with_max_tokens(10000)
             .with_tool_registry(self.tool_registry.clone())
+            .with_mcp_registry(self.mcp_registry.clone())
             .build()?;
 
         Ok(Arc::new(agent))

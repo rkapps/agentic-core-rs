@@ -56,7 +56,7 @@ impl crate::capabilities::client::completion::LlmClient for OpenAIClient {
         let orequest = OpenAICompletionRequest::new(request)?;
         debug!("OpenAICompletionRequest: {:#?}", orequest);
         let body = serde_json::json!(orequest);
-        debug!("Body: {:#?}", body);
+        // debug!("Body: {:#?}", body);
         let oresponse = self
             .http_client
             .post_request::<OpenAICompletionResponse>(url, Some(headers), body)
@@ -86,22 +86,22 @@ impl crate::capabilities::client::completion::LlmClient for OpenAIClient {
                 }
                 FunctionCall {
                     status,
-                    arguements,
+                    arguments,
                     call_id,
                     name,
                 } => {
                     if status == "completed" {
-                        let arguements: Value = match serde_json::from_str(arguements.as_str()) {
+                        let arguments: Value = match serde_json::from_str(arguments.as_str()) {
                             Ok(c) => c,
                             Err(e) => {
-                                return Err(anyhow!("Error parsing function arguements: {:#?}", e))
+                                return Err(anyhow!("Error parsing function arguments: {:#?}", e))
                             }
                         };
 
                         let rcontent = CompletionResponseContent::ToolCall(ToolCallRequest {
                             id : call_id,
                             name,
-                           arguements : arguements,
+                           arguments : arguments,
                         });                        
                         rcontents.push(rcontent);
                     }

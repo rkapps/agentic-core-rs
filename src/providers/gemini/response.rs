@@ -20,7 +20,7 @@ pub enum GeminiInteractionsResponseOutput {
     #[serde(rename = "function_call")]
     FunctionCall {
         id: String,
-        arguements: Value,
+        arguments: Value,
         name: String,
     },
 }

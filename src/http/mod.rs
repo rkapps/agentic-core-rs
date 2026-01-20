@@ -2,7 +2,7 @@ use anyhow::Result;
 use reqwest::Client;
 use tracing::debug;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HttpClient {
     client: Client,
 }

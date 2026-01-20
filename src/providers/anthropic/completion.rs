@@ -57,6 +57,8 @@ impl LlmClient for AnthropicClient {
         headers.insert("anthropic-version", self.anthropic_version.parse()?);
 
         let arequest = AnthropicCompletionRequest::new(request)?;
+        debug!("AnthropicCompletionRequest {:#?}", arequest);
+
         let body = serde_json::json!(arequest);
         let aresponse = self
             .http_client
@@ -76,7 +78,7 @@ impl LlmClient for AnthropicClient {
                     let rcontent = CompletionResponseContent::ToolCall(ToolCallRequest {
                         id,
                         name,
-                        arguements: input,
+                        arguments: input,
                     });
                     rcontents.push(rcontent);
                 }

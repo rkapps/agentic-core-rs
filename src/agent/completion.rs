@@ -1,14 +1,13 @@
 use std::sync::Arc;
 
 use crate::capabilities::{
-    client::{
-        completion::{CompletionStreamResponse, LlmClient},
-        tool::ToolRegistry,
-    },
+    client::completion::{CompletionStreamResponse, LlmClient},
     completion::{
+        mcp::MCPRegistry,
         message::Message,
         request::CompletionRequest,
         response::{CompletionResponse, CompletionResponseContent},
+        tool::ToolRegistry,
     },
 };
 use anyhow::Result;
@@ -19,7 +18,8 @@ pub struct Agent {
     pub client: Arc<dyn LlmClient>,
     pub temperature: f32,
     pub max_tokens: i32,
-    pub tool_registry: ToolRegistry,
+    pub tool_registry: Arc<ToolRegistry>,
+    pub mcp_registry: Arc<MCPRegistry>,
 }
 
 impl Agent {
@@ -49,7 +49,7 @@ impl Agent {
         &self,
         request: CompletionRequest,
     ) -> Result<CompletionResponse> {
-        const MAX_ITERATIONS: usize = 10;
+        const MAX_ITERATIONS: usize = 5;
         let mut iteration = 0;
 
         let mut nrequest = request;
@@ -73,33 +73,32 @@ impl Agent {
             }
 
             for content in response.contents {
-                // debug!("Response Content: {:#?}", content);
                 match content {
                     CompletionResponseContent::Thought(text) => {
                         debug!("Text: {}", text);
-                        // let message = Message::User { content: text, response_id: None };
                         let message = Message::Thought { content: text };
                         nmessages.push(message);
                     }
 
                     CompletionResponseContent::Text(text) => {
                         debug!("Text: {}", text);
-                        // response
                     }
                     CompletionResponseContent::ToolCall(tool_call_request) => {
                         let tool_option =
                             self.tool_registry.get_tool(&tool_call_request.name).await;
+
+                        let mut tool_found = false;
                         match tool_option {
                             Some(tool) => {
                                 let nmessage = Message::ToolCall {
                                     call_id: tool_call_request.id.clone(),
-                                    arguments: tool_call_request.arguements.to_string(),
+                                    arguments: tool_call_request.arguments.to_string(),
                                     name: tool_call_request.name.clone(),
                                 };
                                 nmessages.push(nmessage);
 
                                 let response =
-                                    tool.execute(tool_call_request.arguements.clone()).await?;
+                                    tool.execute(tool_call_request.arguments.clone()).await?;
 
                                 let nmessage = Message::ToolOutput {
                                     call_id: tool_call_request.id.clone(),
@@ -107,10 +106,35 @@ impl Agent {
                                     name: tool_call_request.name.clone(),
                                 };
                                 nmessages.push(nmessage);
+                                tool_found = true
                             }
                             None => {
-                                debug!("Tool not available");
                             }
+                        }
+
+                        if !tool_found {
+
+                            // Call the mcp tool
+                            debug!("Mcp tool_call: {:#?}", &tool_call_request.name);
+                            let response = self
+                                .mcp_registry
+                                .call_tool(&tool_call_request.name, tool_call_request.arguments.clone()).await?;
+                            debug!("Mcp tool_call Value: {:#?}", response);
+
+                            let nmessage = Message::ToolCall {
+                                call_id: tool_call_request.id.clone(),
+                                arguments: tool_call_request.arguments.to_string(),
+                                name: tool_call_request.name.clone(),
+                            };
+                            nmessages.push(nmessage);
+
+                            let nmessage = Message::ToolOutput {
+                                call_id: tool_call_request.id.clone(),
+                                output: response,
+                                name: tool_call_request.name.clone(),
+                            };
+                            nmessages.push(nmessage);
+
                         }
                     }
                 }
@@ -118,12 +142,8 @@ impl Agent {
 
             // If there are toolcall and result messages add them to the next call
             if nmessages.len() > 0 {
-                // nrequest = request.clone();
                 nrequest.messages.extend(nmessages);
-                debug!("New request: {:#?}", nrequest);
             }
         }
-
-        // Ok(())
     }
 }

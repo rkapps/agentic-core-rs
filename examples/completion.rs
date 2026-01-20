@@ -1,25 +1,26 @@
 use agentic_core::{
     agent::service::AgentService,
-    capabilities::{
-        client::tool::ToolRegistry,
-        completion::{message::Message, request::CompletionRequest},
-    }, providers::{anthropic, gemini},
+    capabilities::completion::{message::Message, request::CompletionRequest, tool::ToolRegistry}, providers::{gemini, openai},
 };
 use anyhow::Result;
+use tracing::{Level};
+use tracing_subscriber::{filter, layer::SubscriberExt, util::SubscriberInitExt};
 use std::env;
 
 #[tokio::main]
 async fn main() -> Result<()> {
 
-    tracing_subscriber::fmt()
-        .compact()
-        .pretty()
-        .with_max_level(tracing::Level::DEBUG)
-        .with_target(false)
-        .init();
+    let filter = filter::Targets::new()
+        .with_target("agentic_core::providers::openai", Level::DEBUG);
 
+     tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer().compact().pretty())  // Compact format
+        .with(filter)
+        .init();    
+    
     let tool_registry = ToolRegistry::new();
-    let mut agent_service = AgentService::new(tool_registry);
+    let mut agent_service = AgentService::new();
+    agent_service.register_tool(tool_registry);
 
     // let api_key =
     //     env::var("GEMINI_API_KEY").expect("GEMINI_API_KEY environment variable not set");
@@ -27,9 +28,14 @@ async fn main() -> Result<()> {
     // let model = gemini::completion::MODEL_GEMINI_3_FLASH_PREVIEW;
 
     let api_key =
-        env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY environment variable not set");
-    let llm = anthropic::completion::LLM;
-    let model = anthropic::completion::MODEL_CLAUDE_SONNET_4_5;
+        env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY environment variable not set");
+    let llm = openai::completion::LLM;
+    let model = openai::completion::MODEL_GPT_5_NANO;
+
+    // let api_key =
+    //     env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY environment variable not set");
+    // let llm = anthropic::completion::LLM;
+    // let model = anthropic::completion::MODEL_CLAUDE_SONNET_4_5;
 
 
     let _ = agent_service
@@ -52,7 +58,6 @@ async fn main() -> Result<()> {
     // Create agent
     let agent = agent_service.get_chat_agent(llm)?;
     let mut response = agent.complete(request).await?;
-    println!("Response: {:#?}", response);
 
     //create turn message using the response id
     content = "1st Grade".to_string();
@@ -70,7 +75,6 @@ async fn main() -> Result<()> {
     };
 
     response = agent.complete(request).await?;
-    println!("Response: {:#?}", response);
 
     Ok(())
 }

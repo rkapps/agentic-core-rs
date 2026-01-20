@@ -1,10 +1,7 @@
+use crate::capabilities::completion::{message::Message, request::CompletionRequest};
+use anyhow::{Context, Result};
 use serde::Serialize;
 use serde_json::Value;
-use anyhow::{Context, Result};
-use tracing::debug;
-
-
-use crate::capabilities::completion::{message::Message, request::CompletionRequest};
 
 #[derive(Debug, Serialize)]
 pub struct AnthropicCompletionRequest {
@@ -71,7 +68,7 @@ impl AnthropicCompletionRequest {
 
         for message in request.messages {
             match message {
-                Message::Thought { content:_ } => {}
+                Message::Thought { content: _ } => {}
                 Message::User {
                     content,
                     response_id: _,
@@ -96,7 +93,6 @@ impl AnthropicCompletionRequest {
                     call_id,
                     name,
                 } => {
-
                     let value = serde_json::from_str(&arguments)
                         .context("Failed to serialize arguments for OpenAI")?;
 
@@ -113,7 +109,6 @@ impl AnthropicCompletionRequest {
                     output,
                     name: _,
                 } => {
-
                     let arg_string = serde_json::to_string(&output)
                         .context("Failed to serialize arguments for Anthropic")?;
 
@@ -160,7 +155,6 @@ impl AnthropicCompletionRequest {
             tools: atools,
         };
 
-        debug!("AnthropicCompletionRequest {:#?}", arequest);
         Ok(arequest)
     }
 }

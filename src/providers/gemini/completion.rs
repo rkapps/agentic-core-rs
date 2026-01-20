@@ -99,14 +99,14 @@ impl GeminiClient {
                     rcontents.push(rcontent);
                 }
                 FunctionCall {
-                    arguements,
+                    arguments,
                     id,
                     name,
                 } => {
                     let rcontent = CompletionResponseContent::ToolCall(ToolCallRequest {
                         id,
                         name,
-                        arguements,
+                        arguments,
                     });
                     rcontents.push(rcontent);
                 }
