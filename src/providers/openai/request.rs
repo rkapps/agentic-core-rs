@@ -1,9 +1,9 @@
 use serde::Serialize;
 use anyhow::{Context, Result};
 
-use crate::capabilities::completion::{
-    message::Message, request::CompletionRequest, tool::ToolDefinition,
-};
+use crate::capabilities::{completion::{
+    message::Message, request::CompletionRequest
+}, tools::tool::ToolDefinition};
 
 #[derive(Serialize, Debug)]
 pub struct OpenAICompletionRequest {

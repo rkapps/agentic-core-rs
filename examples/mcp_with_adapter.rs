@@ -1,11 +1,9 @@
 use agentic_core::{
     agent::service::AgentService,
-    capabilities::completion::{
-        mcp::{MCPRegistry, MCPServerAdapter, MCPServerConfig},
+    capabilities::{client::mcp::MCPServerAdapter, completion::{
         message::Message,
-        rcp::JsonRpcRequest,
         request::CompletionRequest,
-    },
+    }, rcp::JsonRpcRequest, tools::mcp::{MCPRegistry, MCPServerConfig}},
     providers::openai,
 };
 use anyhow::Result;

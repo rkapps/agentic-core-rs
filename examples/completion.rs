@@ -1,6 +1,6 @@
 use agentic_core::{
     agent::service::AgentService,
-    capabilities::completion::{message::Message, request::CompletionRequest, tool::ToolRegistry}, providers::{gemini, openai},
+    capabilities::{completion::{message::Message, request::CompletionRequest}, tools::tool::ToolRegistry}, providers::{gemini, openai},
 };
 use anyhow::Result;
 use tracing::{Level};

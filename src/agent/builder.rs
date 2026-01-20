@@ -4,7 +4,7 @@ use anyhow::Result;
 
 use crate::{
     agent::completion::Agent,
-    capabilities::{client::completion::LlmClient, completion::{mcp::MCPRegistry, tool::ToolRegistry}},
+    capabilities::{client::completion::LlmClient, tools::{mcp::MCPRegistry, tool::ToolRegistry}},
 };
 
 const MODEL_TEMPERATURE: f32 = 0.5;

@@ -3,9 +3,9 @@ use serde_json::Value;
 use anyhow::{Context, Result};
 
 use crate::{
-    capabilities::completion::{
-        message::Message, request::CompletionRequest, tool::ToolDefinition,
-    },
+    capabilities::{completion::{
+        message::Message, request::CompletionRequest,
+    }, tools::tool::ToolDefinition},
     providers::gemini::completion::MODEL_GEMINI_3_FLASH_PREVIEW,
 };
 

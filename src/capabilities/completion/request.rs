@@ -1,4 +1,4 @@
-use crate::capabilities::completion::{message::Message, tool::ToolDefinition};
+use crate::capabilities::{completion::message::Message, tools::tool::ToolDefinition};
 
 #[derive(Debug, Clone)]
 pub struct CompletionRequest {

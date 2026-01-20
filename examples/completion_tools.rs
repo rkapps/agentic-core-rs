@@ -12,10 +12,9 @@ use agentic_core::{
         completion::{
             message::Message,
             request::CompletionRequest,
-            tool::{ToolDefinition, ToolRegistry},
-        },
+        }, tools::tool::{ToolDefinition, ToolRegistry},
     },
-    providers::{anthropic},
+    providers::anthropic,
 };
 use serde_json::{json, Value};
 

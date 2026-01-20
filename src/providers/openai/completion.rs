@@ -10,8 +10,8 @@ use crate::{
         client::completion::CompletionStreamResponse,
         completion::{
             request::CompletionRequest,
-            response::{CompletionChunkResponse, CompletionResponse, CompletionResponseContent}, tool::ToolCallRequest,
-        },
+            response::{CompletionChunkResponse, CompletionResponse, CompletionResponseContent}
+        }, tools::request::ToolCallRequest,
     },
     http::HttpClient,
     providers::openai::{

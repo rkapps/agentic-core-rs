@@ -10,8 +10,7 @@ use crate::{
         completion::{
             request::CompletionRequest,
             response::{CompletionChunkResponse, CompletionResponse, CompletionResponseContent},
-            tool::ToolCallRequest,
-        },
+        }, tools::request::ToolCallRequest,
     },
     http::HttpClient,
     providers::anthropic::{

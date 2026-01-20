@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
-use crate::capabilities::completion::tool::ToolCallRequest;
+
+use crate::capabilities::tools::request::ToolCallRequest;
 
 
 #[derive(Debug, Clone)]

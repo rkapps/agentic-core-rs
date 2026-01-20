@@ -1,16 +1,17 @@
+use anyhow::{Context, Result};
+use reqwest::header::HeaderMap;
+use serde_json::{json, Value};
+use std::collections::HashMap;
+use tracing::debug;
+
 use crate::{
-    capabilities::completion::{
+    capabilities::{
+        client::mcp::MCPServerAdapter,
         rcp::{JsonRpcRequest, JsonRpcResponse},
-        tool::ToolDefinition,
+        tools::{request::{MCPToolCallParamsRequest, MCPToolGetParamsRequest, MCPToolListRequest}, response::{MCPToolCallResponse, MCPToolGetDefinition, MCPToolListDefinition, MCPToolListResponse}, tool::ToolDefinition},
     },
     http::HttpClient,
 };
-use anyhow::{Context, Result};
-use reqwest::header::HeaderMap;
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-use std::{collections::HashMap, fmt::Debug};
-use tracing::debug;
 
 #[derive(Debug, Clone)]
 pub struct MCPServerConfig {
@@ -222,66 +223,6 @@ impl MCPClient {
     }
 }
 
-#[derive(Debug, Serialize)]
-struct MCPToolListRequest {}
-
-#[derive(Debug, Deserialize)]
-struct MCPToolListResponse {
-    content: Vec<MCPToolListResponseContent>,
-}
-#[derive(Debug, Deserialize, Clone)]
-struct MCPToolListResponseContent {
-    #[allow(dead_code)]
-    r#type: String,
-    text: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct MCPToolCallResponse {
-    content: Vec<MCPToolCallResponseContent>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-struct MCPToolCallResponseContent {
-    #[allow(dead_code)]
-    r#type: String,
-    text: String,
-}
-
-#[derive(Debug, Serialize)]
-struct MCPToolGetParamsRequest {
-    tool_name: String,
-}
-
-#[derive(Debug, Serialize)]
-struct MCPToolCallParamsRequest {
-    tool_name: String,
-    arguments: Value,
-}
-
-#[derive(Debug, Deserialize)]
-struct MCPToolListDefinition {
-    name: String,
-    description: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct MCPToolGetDefinition {
-    #[allow(dead_code)]
-    name: String,
-    description: String,
-    parameters: Value,
-}
-
-pub trait MCPServerAdapter: Debug {
-    fn build_tool_list_request(&self) -> JsonRpcRequest;
-    fn parse_tool_list_response(&self, text: String) -> Result<String>;
-    fn build_tool_get_request(&self, name: &str) -> JsonRpcRequest;
-    fn parse_tool_get_response(&self, text: String) -> Result<String>;
-    fn build_tool_call_request(&self, name: &str, params: Value) -> JsonRpcRequest;
-    fn parse_tool_call_response(&self, text: String) -> Result<String>;
-}
-
 #[derive(Debug)]
 struct StandardAdapter {}
 
@@ -323,8 +264,7 @@ impl MCPServerAdapter for StandardAdapter {
     }
 
     fn parse_tool_call_response(&self, text: String) -> Result<String> {
-        let data =serde_json::from_str(&text)?;
+        let data = serde_json::from_str(&text)?;
         Ok(data)
     }
-
 }

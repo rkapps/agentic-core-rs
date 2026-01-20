@@ -3,12 +3,10 @@ use std::sync::Arc;
 use crate::capabilities::{
     client::completion::{CompletionStreamResponse, LlmClient},
     completion::{
-        mcp::MCPRegistry,
         message::Message,
         request::CompletionRequest,
         response::{CompletionResponse, CompletionResponseContent},
-        tool::ToolRegistry,
-    },
+    }, tools::{mcp::MCPRegistry, tool::ToolRegistry},
 };
 use anyhow::Result;
 use tracing::debug;

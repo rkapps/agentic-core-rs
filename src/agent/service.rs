@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use crate::{
     agent::{builder::AgentBuilder, completion::Agent},
-    capabilities::{client::completion::LlmClient, completion::{mcp::MCPRegistry, tool::ToolRegistry}},
+    capabilities::{client::completion::LlmClient, tools::{mcp::MCPRegistry, tool::ToolRegistry}},
     providers::{
         anthropic::{self, completion::AnthropicClient},
         gemini::{self, completion::GeminiClient},
