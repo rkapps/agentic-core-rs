@@ -77,6 +77,12 @@ impl GeminiInteractionsRequest {
         let mut function_result_contents = Vec::new();
         let mut function_call_contents = Vec::new();
 
+        // create the input with blank content
+        let mut input = GeminiCompletionRequestInput::Content {
+            role: "user".to_string(),
+            content: String::new(),
+        };
+
         for message in request.messages {
             match message {
 
@@ -95,11 +101,12 @@ impl GeminiInteractionsRequest {
                     content,
                     response_id: _,
                 } => {
-                    let input = GeminiCompletionRequestInput::Content {
+                    
+                    input = GeminiCompletionRequestInput::Content {
                         role: "user".to_string(),
                         content: content,
-                    };
-                    inputs.push(input);
+                    };                    
+                    // inputs.push(input);
                 }
                 Message::Assistant {
                     content:_,
@@ -142,6 +149,8 @@ impl GeminiInteractionsRequest {
             }
         }
 
+        inputs.push(input);
+        
         if function_call_contents.len() > 0 {
             let input = GeminiCompletionRequestInput::FunctionCall { 
                 role: "model".to_string(),
