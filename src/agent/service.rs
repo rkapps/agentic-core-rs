@@ -75,8 +75,8 @@ impl AgentService {
     pub fn get_completion_agent(&self, llm: &str) -> Result<Arc<Agent>> {
         //get client
         let client = match llm {
-            openai::completion::LLM => self.openai_client.clone(),
-            gemini::completion::LLM => self.gemini_client.clone(),
+            openai::LLM => self.openai_client.clone(),
+            gemini::LLM => self.gemini_client.clone(),
             anthropic::completion::LLM => self.anthropic_client.clone(),
             _ => None,
         };
@@ -97,14 +97,14 @@ impl AgentService {
         let mut providers: Vec<LlmProvider> = Vec::new();
 
         let gemini = LlmProvider {
-            id: String::from(gemini::completion::LLM.to_lowercase()),
-            llm: gemini::completion::LLM.to_string(),
-            models: vec![gemini::completion::MODEL_GEMINI_3_FLASH_PREVIEW.to_string()],
+            id: String::from(gemini::LLM.to_lowercase()),
+            llm: gemini::LLM.to_string(),
+            models: vec![gemini::MODEL_GEMINI_3_FLASH_PREVIEW.to_string()],
         };
         let openai = LlmProvider {
-            id: String::from(openai::completion::LLM.to_lowercase()),
-            llm: openai::completion::LLM.to_string(),
-            models: vec![openai::completion::MODEL_GPT_5_NANO.to_string()],
+            id: String::from(openai::LLM.to_lowercase()),
+            llm: openai::LLM.to_string(),
+            models: vec![openai::MODEL_GPT_5_NANO.to_string()],
         };
         let anthropic = LlmProvider {
             id: String::from(anthropic::completion::LLM.to_lowercase()),

@@ -14,11 +14,10 @@ use crate::{
     },
     http::HttpClient,
     providers::gemini::{
-        request::GeminiInteractionsRequest,
-        response::{
+        GEMINI_BASE_URL, request::GeminiInteractionsRequest, response::{
             GeminiInteractionsChunkResponse, GeminiInteractionsResponse,
             GeminiInteractionsResponseOutput::{FunctionCall, Text, Thought},
-        },
+        }
     },
 };
 
@@ -29,9 +28,6 @@ pub struct GeminiClient {
     http_client: HttpClient,
 }
 
-pub const LLM: &str = "Gemini";
-pub const MODEL_GEMINI_3_FLASH_PREVIEW: &str = "gemini-3-flash-preview";
-const GEMINI_BASE_URL: &str = "https://generativelanguage.googleapis.com";
 
 impl GeminiClient {
     pub fn new(api_key: String) -> Result<Self> {

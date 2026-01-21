@@ -7,7 +7,7 @@ use tracing::{debug, error};
 
 use crate::{
     capabilities::{
-        client::completion::CompletionStreamResponse,
+        client::completion::{CompletionStreamResponse, LlmClient},
         completion::{
             request::CompletionRequest,
             response::{CompletionChunkResponse, CompletionResponse, CompletionResponseContent}
@@ -15,11 +15,10 @@ use crate::{
     },
     http::HttpClient,
     providers::openai::{
-        request::OpenAICompletionRequest,
-        response::{
+        OPENAI_BASE_URL, request::OpenAICompletionRequest, response::{
             OpenAIChunkResponseData, OpenAICompletionResponse,
             OpenAICompletionResponseOutput::{FunctionCall, Message, Reasoning},
-        },
+        }
     },
 };
 
@@ -30,9 +29,6 @@ pub struct OpenAIClient {
     http_client: HttpClient,
 }
 
-pub const LLM: &str = "OpenAI";
-pub const MODEL_GPT_5_NANO: &str = "gpt-5-nano";
-const OPENAI_BASE_URL: &str = "https://api.openai.com";
 
 impl OpenAIClient {
     pub fn new(api_key: String) -> Result<Self> {
@@ -45,7 +41,7 @@ impl OpenAIClient {
 }
 
 #[async_trait]
-impl crate::capabilities::client::completion::LlmClient for OpenAIClient {
+impl LlmClient for OpenAIClient {
     async fn complete(&self, request: CompletionRequest) -> Result<CompletionResponse> {
         let url = format!("{}/v1/responses", self.base_url,);
 

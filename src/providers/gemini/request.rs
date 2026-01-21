@@ -5,8 +5,7 @@ use anyhow::{Context, Result};
 use crate::{
     capabilities::{completion::{
         message::Message, request::CompletionRequest,
-    }, tools::tool::ToolDefinition},
-    providers::gemini::completion::MODEL_GEMINI_3_FLASH_PREVIEW,
+    }, tools::tool::ToolDefinition}, providers::gemini::{MODEL_GEMINI_3_FLASH_PREVIEW, MODEL_GEMINI_EMBEDDING_001},
 };
 
 #[derive(Debug, Serialize)]
@@ -247,3 +246,37 @@ pub struct GeminiCompletionRequestConfig {
 //         request
 //     }
 // }
+
+
+
+#[derive(Serialize, Debug)]
+pub (super) struct GeminiEmbeddingsRequest {
+    pub model: String,
+    content: GeminiEmbeddingsRequestContent
+}
+
+#[derive(Serialize, Debug)]
+pub (super) struct GeminiEmbeddingsRequestContent {
+    parts: Vec<GeminiEmbeddingsRequestContentPart>
+}
+
+#[derive(Serialize, Debug)]
+pub (super) struct GeminiEmbeddingsRequestContentPart {
+    text: String
+}
+
+impl GeminiEmbeddingsRequest {
+    pub fn new(texts: Vec<&str>) -> Self{
+
+        let mut parts = Vec::new();
+        for text in texts {
+            let part = GeminiEmbeddingsRequestContentPart{text: text.to_string()};
+            parts.push(part);
+        }
+
+        Self{
+            model: MODEL_GEMINI_EMBEDDING_001.to_string(),
+            content: GeminiEmbeddingsRequestContent { parts}
+        }
+    }
+}

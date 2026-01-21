@@ -24,13 +24,13 @@ async fn main() -> Result<()> {
 
     let api_key =
         env::var("GEMINI_API_KEY").expect("GEMINI_API_KEY environment variable not set");
-    let llm = gemini::completion::LLM;
-    let model = gemini::completion::MODEL_GEMINI_3_FLASH_PREVIEW;
+    let llm = gemini::LLM;
+    let model = gemini::MODEL_GEMINI_3_FLASH_PREVIEW;
 
     // let api_key =
     //     env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY environment variable not set");
-    // let llm = openai::completion::LLM;
-    // let model = openai::completion::MODEL_GPT_5_NANO;
+    // let llm = openai::LLM;
+    // let model = openai::MODEL_GPT_5_NANO;
 
     // let api_key =
     //     env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY environment variable not set");

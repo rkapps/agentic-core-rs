@@ -23,14 +23,13 @@ impl HttpClient {
         headers: Option<reqwest::header::HeaderMap>,
         body: serde_json::Value,
     ) -> Result<T> {
-        debug!("Urs: {}", url);
+        debug!("Url: {}", url);
         let mut request = self.client.post(url);
 
         if let Some(h) = headers {
             request = request.headers(h);
         }
 
-        // debug!("Body: {:#?}", &body);
         let response = request.json(&body).send().await?;
 
         let text = response.text().await?;

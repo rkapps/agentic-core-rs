@@ -69,3 +69,14 @@ pub struct GeminiResponseContent {
 pub struct GeminiResponseContentPart {
     pub text: String,
 }
+
+
+#[derive(Debug, Deserialize, Clone)]
+pub (super) struct GeminiEmbeddingsResponse {
+    pub (super) embedding: GeminiEmbeddingsResponseEmbedding
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub (super) struct GeminiEmbeddingsResponseEmbedding {
+    pub (super) values: Vec<f64>
+}

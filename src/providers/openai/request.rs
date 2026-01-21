@@ -1,9 +1,9 @@
 use serde::Serialize;
 use anyhow::{Context, Result};
 
-use crate::capabilities::{completion::{
+use crate::{capabilities::{completion::{
     message::Message, request::CompletionRequest
-}, tools::tool::ToolDefinition};
+}, tools::tool::ToolDefinition}, providers::openai::MODEL_TEXT_EMBEDDING_3_SMALL};
 
 #[derive(Serialize, Debug)]
 pub struct OpenAICompletionRequest {
@@ -116,5 +116,21 @@ impl OpenAICompletionRequest {
             },
             tools: request.definitions,
         })
+    }
+}
+
+
+#[derive(Serialize, Debug)]
+pub struct OpenAIEmbeddingsRequest {
+    pub model: String,
+    pub input: Vec<String>
+}
+
+impl OpenAIEmbeddingsRequest {
+    pub fn new(texts: &Vec<&str>) -> Self{
+        Self{
+            model: MODEL_TEXT_EMBEDDING_3_SMALL.to_string(),
+            input: texts.iter().map(|s| s.to_string()).collect()
+        }
     }
 }

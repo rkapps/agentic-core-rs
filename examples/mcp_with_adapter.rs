@@ -48,13 +48,13 @@ async fn main() -> Result<()> {
 
     // let api_key =
     //     env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY environment variable not set");
-    // let llm = anthropic::completion::LLM;
-    // let model = anthropic::completion::MODEL_CLAUDE_SONNET_4_5;
+    // let llm = anthropic::LLM;
+    // let model = anthropic::MODEL_CLAUDE_SONNET_4_5;
 
     let api_key =
         env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY environment variable not set");
-    let llm = openai::completion::LLM;
-    let model = openai::completion::MODEL_GPT_5_NANO;
+    let llm = openai::LLM;
+    let model = openai::MODEL_GPT_5_NANO;
 
 
     let mut agent_service = AgentService::new();

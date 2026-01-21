@@ -118,6 +118,7 @@ impl LlmClient for AnthropicClient {
             error!("❌ API ERROR BODY: {}", error_body);
             return Err(anyhow!("Bad request: {}", error_body));
         }
+        debug!("response: {:#?}", response);
 
         let stream = response
             .bytes_stream()
