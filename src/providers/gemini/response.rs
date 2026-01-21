@@ -78,5 +78,5 @@ pub (super) struct GeminiEmbeddingsResponse {
 
 #[derive(Debug, Deserialize, Clone)]
 pub (super) struct GeminiEmbeddingsResponseEmbedding {
-    pub (super) values: Vec<f64>
+    pub (super) values: Vec<f32>
 }

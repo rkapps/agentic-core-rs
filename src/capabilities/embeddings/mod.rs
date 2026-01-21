@@ -3,7 +3,7 @@
 #[derive(Debug)]
 pub struct Embedding {
     pub text: String,
-    pub vector: Vec<f64>,
+    pub vector: Vec<f32>,
     pub model: String,
     pub dimension: usize
 }
