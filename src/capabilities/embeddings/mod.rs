@@ -1,21 +1,29 @@
+use anyhow::Error;
 
 
-#[derive(Debug)]
-pub struct Embedding {
-    pub text: String,
-    pub vector: Vec<f32>,
-    pub model: String,
-    pub dimension: usize
-}
+#[derive(Debug, Clone)]
+pub struct Embedding(Vec<f32>);
 
 impl Embedding {
-
-    pub fn empty() -> Self {
-        Self{
-            text: String::new(),
-            vector: vec![],
-            model: String::new(),
-            dimension: 0
-        }
+    pub fn new(vector: Vec<f32>) -> Self {
+        Self(vector)
     }
+    
+    pub fn as_slice(&self) -> &[f32] {
+        &self.0
+    }
+    
+    pub fn into_vec(self) -> Vec<f32> {
+        self.0
+    }
+    
+    pub fn dimension(&self) -> usize {
+        self.0.len()
+    }
+}
+
+#[derive(Debug)]
+pub struct BatchResult {
+    pub successful: Vec<(usize, Embedding)>,
+    pub failed: Vec<(usize, Error)>,
 }

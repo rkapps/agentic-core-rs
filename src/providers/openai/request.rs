@@ -127,7 +127,7 @@ pub struct OpenAIEmbeddingsRequest {
 }
 
 impl OpenAIEmbeddingsRequest {
-    pub fn new(texts: &Vec<&str>) -> Self{
+    pub fn new(texts: &[&str]) -> Self{
         Self{
             model: MODEL_TEXT_EMBEDDING_3_SMALL.to_string(),
             input: texts.iter().map(|s| s.to_string()).collect()

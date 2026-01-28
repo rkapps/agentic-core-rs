@@ -1,5 +1,8 @@
 use crate::{
-    capabilities::{client::embeddings::EmbeddingClient, embeddings::Embedding},
+    capabilities::{
+        client::embeddings::EmbeddingClient,
+        embeddings::{BatchResult, Embedding},
+    },
     http::HttpClient,
     providers::openai::{
         request::OpenAIEmbeddingsRequest, response::OpenAIEmbeddingsResponse, OPENAI_BASE_URL,
@@ -44,23 +47,14 @@ impl EmbeddingClient for OpenAIEmbeddingClient {
             .post_request::<OpenAIEmbeddingsResponse>(url, Some(headers), body)
             .await?;
         debug!("Response: {:#?}", response.data.len());
-
-        let embedding = Embedding{
-            text: text.to_string(),
-            vector: response.data[0].embedding.clone(),
-            dimension: response.data[0].embedding.len(),
-            model: request.model,
-        };
+        let embedding = Embedding::new(response.data[0].embedding.clone());
 
         Ok(embedding)
-
     }
 
-    async fn embed_text_batch(&self, texts: Vec<&str>) -> Result<Vec<Embedding>> {
-
+    async fn embed_text_batch(&self, texts: &[&str]) -> Result<BatchResult> {
         let url = format!("{}/v1/embeddings", self.base_url,);
-        let request = OpenAIEmbeddingsRequest::new(&texts);
-        let model = request.model.clone();
+        let request = OpenAIEmbeddingsRequest::new(texts);
         let mut headers = reqwest::header::HeaderMap::new();
         let bearer = format!("Bearer {}", self.api_key);
         headers.insert("Authorization", bearer.parse()?);
@@ -73,19 +67,15 @@ impl EmbeddingClient for OpenAIEmbeddingClient {
             .post_request::<OpenAIEmbeddingsResponse>(url, Some(headers), body)
             .await?;
 
-        let mut embeddings: Vec<Embedding> = Vec::new();
-        for (index, data) in response.data.iter().enumerate() {
 
-            let embedding = Embedding{
-                text: texts[index].to_string(),
-                vector: data.embedding.clone(),
-                dimension: data.embedding.len(),
-                model: model.clone(),
-            };
-            embeddings.push(embedding);
-        }
+        // consume the response, assuming that OpenAI returns the vectors in the same order. 
+        // NEED TO VERIFY!!!
+        let successful = response
+            .data
+            .into_iter()
+            .map(|data| (data.index, Embedding::new(data.embedding)))
+            .collect();
 
-        Ok(embeddings)
-
+        Ok(BatchResult { successful, failed: Vec::new() })
     }
 }

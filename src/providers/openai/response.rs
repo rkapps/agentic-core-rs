@@ -60,5 +60,6 @@ pub (super) struct OpenAIEmbeddingsResponse {
 
 #[derive(Debug, Deserialize, Clone)]
 pub (super) struct OpenAIEmbeddingsResponseData {
+    pub index: usize,
     pub embedding: Vec<f32>
 }

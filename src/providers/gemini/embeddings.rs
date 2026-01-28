@@ -1,11 +1,9 @@
 use crate::{
-    capabilities::{client::embeddings::EmbeddingClient, embeddings::Embedding},
+    capabilities::{client::embeddings::EmbeddingClient, embeddings::{BatchResult, Embedding}},
     http::HttpClient,
-    providers::{
-        gemini::{
-            request::GeminiEmbeddingsRequest, response::GeminiEmbeddingsResponse, GEMINI_BASE_URL,
+    providers::gemini::{
+            GEMINI_BASE_URL, request::GeminiEmbeddingsRequest, response::GeminiEmbeddingsResponse
         },
-    },
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -48,41 +46,28 @@ impl EmbeddingClient for GeminiEmbeddingClient {
             .await?;
         debug!("Response: {:#?}", response.embedding.values.len());
 
-        let embedding = Embedding{
-            text: text.to_string(),
-            vector: response.embedding.clone().values,
-            dimension: response.embedding.values.len(),
-            model: request.model,
-        };
+        let embedding = Embedding::new(response.embedding.clone().values);
 
         Ok(embedding)
     }
 
-    async fn embed_text_batch(&self, texts: Vec<&str>) -> Result<Vec<Embedding>> {
+    async fn embed_text_batch(&self, texts: &[&str]) -> Result<BatchResult> {
 
-        let mut embeddings: Vec<Embedding> = Vec::new();
-        for text in texts {
-            let embedding = self.embed_text(text).await?;
-            embeddings.push(embedding);
+        let mut successful = Vec::new();
+        let mut failed = Vec::new();
+
+        for (index, text) in texts.iter().enumerate() {
+            match self.embed_text(text).await {
+                Ok(c) => {
+                    successful.push((index, c));
+                },
+                Err(e) => {
+                    failed.push((index, e));
+                }
+
+            };
         }
 
-        // let url = format!("{}/v1beta/models/gemini-embedding-001:embedContent", self.base_url,);
-        // let request: GeminiEmbeddingsRequest = GeminiEmbeddingsRequest::new(texts);
-
-        // let mut headers = reqwest::header::HeaderMap::new();
-        // // let bearer = format!("Bearer {}", self.api_key);
-        // // headers.insert("Authorization", bearer.parse()?);
-        // headers.insert("x-goog-api-key", self.api_key.parse()?);
-
-        // debug!("Request: {:#?}", request);
-
-        // let body = serde_json::json!(request);
-        // let response = self
-        //     .http_client
-        //     .post_request::<GeminiEmbeddingsResponse>(url, Some(headers), body)
-        //     .await?;
-        // debug!("Response: {:#?}", response.embedding.values.len());
-        // Ok(vec![Embedding::empty()])
-        Ok(embeddings)
+        Ok(BatchResult { successful, failed })
     }
 }
