@@ -14,11 +14,10 @@ use crate::{
     },
     http::HttpClient,
     providers::anthropic::{
-        request::AnthropicCompletionRequest,
-        response::{
+        ANTHROPIC_BASE_URL, ANTHROPIC_VERSION, request::AnthropicCompletionRequest, response::{
             AnthropicChunkResponse, AnthropicCompletionResponse,
             AnthropicCompletionResponseContent::{Text, ToolUse},
-        },
+        }
     },
 };
 
@@ -30,10 +29,6 @@ pub struct AnthropicClient {
     http_client: HttpClient,
 }
 
-pub const LLM: &str = "Anthropic";
-pub const MODEL_CLAUDE_SONNET_4_5: &str = "claude-sonnet-4-5";
-const ANTHROPIC_BASE_URL: &str = "https://api.anthropic.com";
-const ANTHROPIC_VERSION: &str = "2023-06-01";
 
 impl AnthropicClient {
     pub fn new(api_key: String) -> Result<Self> {

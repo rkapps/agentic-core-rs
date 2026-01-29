@@ -2,9 +2,7 @@ use agentic_core::{
     agent::service::AgentService,
     capabilities::{client::mcp::MCPServerAdapter, completion::{
         message::Message,
-        request::CompletionRequest,
     }, rcp::JsonRpcRequest, tools::mcp::{MCPRegistry, MCPServerConfig}},
-    providers::openai,
 };
 use anyhow::Result;
 use py_literal::Value as PyValue;
@@ -17,8 +15,10 @@ use tracing::{Level, debug};
 async fn main() -> Result<()> {
     
     let filter = filter::Targets::new()
-        .with_target("agentic_core::providers::openai", Level::DEBUG)
+        .with_target("agentic_core::providers::gemini", Level::DEBUG)
+        .with_target("agentic_core::tools", Level::DEBUG)
         .with_target("agentic_core::agent", Level::DEBUG)
+        .with_target("agentic_core::examples", Level::DEBUG)
         ;
 
      tracing_subscriber::registry()
@@ -33,34 +33,22 @@ async fn main() -> Result<()> {
         api_key: alpha_api_key,
     };
 
-    let mut tools = Vec::new();
-
-    let mut mcp_registry = MCPRegistry::new();
-    let adapter = Box::new(AlphaMCPServerAdapter {});
-    mcp_registry
-        .register_server_with_adapter(config, adapter)
-        .await?;
-
-    let tool_definition = mcp_registry
-        .register_tool("Alpha", "COMPANY_OVERVIEW")
-        .await?;
-    tools.push(tool_definition);
-
     // let api_key =
-    //     env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY environment variable not set");
-    // let llm = anthropic::LLM;
-    // let model = anthropic::MODEL_CLAUDE_SONNET_4_5;
+    //     env::var("GEMINI_API_KEY").expect("GEMINI_API_KEY environment variable not set");
 
-    let api_key =
-        env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY environment variable not set");
-    let llm = openai::LLM;
-    let model = openai::MODEL_GPT_5_NANO;
+    // Create the alpha adapter.
 
+    let api_key = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY environment variable not set");
+    let adapter = AlphaMCPServerAdapter {};
 
-    let mut agent_service = AgentService::new();
-    agent_service.register_mcp(mcp_registry);
-
-    let _ = agent_service.register_client(llm, &api_key).unwrap();
+    let agent_service = AgentService::new();
+    let agent = agent_service
+        .builder()
+        .with_mcp_registry(config, adapter).await?
+        .with_mcp_tool("Alpha", "COMPANy_OVERVIEW").await?
+        // .with_gemini(&api_key)?
+        .with_openai(&api_key)?
+        .build()?;
 
     let content = "Tell me about apple stock".to_string();
     let message = Message::User {
@@ -68,20 +56,8 @@ async fn main() -> Result<()> {
         response_id: None,
     };
 
-    let request = CompletionRequest {
-        model: model.to_string(),
-        system: Some(content),
-        messages: vec![message],
-        temperature: 0.5,
-        max_tokens: 5000,
-        stream: false,
-        definitions: tools,
-    };
-
-    let agent = agent_service.get_completion_agent(llm)?;
-
-    let response = agent.complete_with_tools(request).await?;
-    debug!("Response: {:#?}", response);
+    let response = agent.complete_with_tools(&vec![message]).await?;
+    println!("Response: {:#?}", response);
 
     Ok(())
 }

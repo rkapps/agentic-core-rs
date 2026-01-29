@@ -1,80 +1,52 @@
 use agentic_core::{
     agent::service::AgentService,
-    capabilities::{completion::{message::Message, request::CompletionRequest}, tools::tool::ToolRegistry}, providers::{gemini, openai},
+    capabilities::completion::{message::Message, request::CompletionRequest, response::CompletionResponseContent},
 };
 use anyhow::Result;
-use tracing::{Level};
-use tracing_subscriber::{filter, layer::SubscriberExt, util::SubscriberInitExt};
 use std::env;
+use tracing::Level;
+use tracing_subscriber::{filter, layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let filter =
+        filter::Targets::new().with_target("agentic_core::providers::gemini", Level::DEBUG);
 
-    let filter = filter::Targets::new()
-        .with_target("agentic_core::providers::gemini", Level::DEBUG);
-
-     tracing_subscriber::registry()
-        .with(tracing_subscriber::fmt::layer().compact().pretty())  // Compact format
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer().compact().pretty()) // Compact format
         .with(filter)
-        .init();    
-    
-    let tool_registry = ToolRegistry::new();
-    let mut agent_service = AgentService::new();
-    agent_service.register_tool(tool_registry);
+        .init();
 
     let api_key =
-        env::var("GEMINI_API_KEY").expect("GEMINI_API_KEY environment variable not set");
-    let llm = gemini::LLM;
-    let model = gemini::MODEL_GEMINI_3_FLASH_PREVIEW;
+        env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY environment variable not set");
 
-    // let api_key =
-    //     env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY environment variable not set");
-    // let llm = openai::LLM;
-    // let model = openai::MODEL_GPT_5_NANO;
+    let agent_service = AgentService::new();
+    let agent = agent_service.builder().with_anthropic(&api_key)?.build()?;
 
-    // let api_key =
-    //     env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY environment variable not set");
-    // let llm = anthropic::completion::LLM;
-    // let model = anthropic::completion::MODEL_CLAUDE_SONNET_4_5;
-
-
-    let _ = agent_service
-        .register_client(llm, &api_key)
-        .unwrap();
-
-    let mut content = "You are an elementary quiz coordinator. Design a multiple choise quiz after asking them about the grade, subject and difficult level. Provide 20 questions and rate them at the end.".to_string();
-    let mut message = Message::User{ content: content.clone(), response_id: None };
-
-    let mut request = CompletionRequest {
-        model: model.to_string(),
-        system: Some(content),
-        messages: vec![message],
-        temperature: 0.5,
-        max_tokens: 5000,
-        stream: false,
-        definitions: Vec::new(),
+    let mut messages = vec![];
+    let content = "You are an elementary quiz coordinator. Design a multiple choise quiz after asking them about the grade, subject and difficult level. Provide 20 questions and rate them at the end.".to_string();
+    let mut message = Message::User {
+        content: content.clone(),
+        response_id: None,
     };
+    messages.push(message);
 
     // Create agent
-    let agent = agent_service.get_completion_agent(llm)?;
-    let mut response = agent.complete(request).await?;
-
+    let response = agent.complete(&messages).await?;
+    let response_id = response.response_id;// let aresponse = response.clone();
+    let content = response.contents.get(0).unwrap();
+    if let CompletionResponseContent::Text(val) = content {
+        message = Message::Assistant { content: val.to_string(), response_id: Some(response_id.clone())};
+        messages.push(message);
+    }
     //create turn message using the response id
-    content = "1st Grade".to_string();
-    message = Message::User{ content: content.clone(), response_id: Some(response.response_id) };
-
-    //Create turn request
-    request = CompletionRequest {
-        model: model.to_string(),
-        system: Some(content),
-        messages: vec![message],
-        temperature: 0.5,
-        max_tokens: 5000,
-        stream: false,
-        definitions: Vec::new(),
+    message = Message::User {
+        content: "1st Grade".to_string(),
+        response_id: Some(response_id),
     };
+    messages.push(message);
 
-    let _ = agent.complete(request).await?;
+    let _ = agent.complete(&messages).await?;
 
     Ok(())
 }

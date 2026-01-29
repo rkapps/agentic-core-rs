@@ -23,7 +23,8 @@ pub (super) struct MCPToolListDefinition {
 
 #[derive(Debug, Deserialize)]
 pub (super) struct MCPToolGetDefinition {
-    _name: String,
+    #[allow(dead_code)]
+    name: String,
     pub (super)  description: String,
     pub (super) parameters: Value,
 }

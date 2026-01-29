@@ -1,14 +1,21 @@
 use anyhow::{Context, Result};
 use reqwest::header::HeaderMap;
 use serde_json::{json, Value};
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 use tracing::debug;
 
 use crate::{
     capabilities::{
         client::mcp::MCPServerAdapter,
         rcp::{JsonRpcRequest, JsonRpcResponse},
-        tools::{request::{MCPToolCallParamsRequest, MCPToolGetParamsRequest, MCPToolListRequest}, response::{MCPToolCallResponse, MCPToolGetDefinition, MCPToolListDefinition, MCPToolListResponse}, tool::ToolDefinition},
+        tools::{
+            request::{MCPToolCallParamsRequest, MCPToolGetParamsRequest, MCPToolListRequest},
+            response::{
+                MCPToolCallResponse, MCPToolGetDefinition, MCPToolListDefinition,
+                MCPToolListResponse,
+            },
+            tool::ToolDefinition,
+        },
     },
     http::HttpClient,
 };
@@ -20,7 +27,7 @@ pub struct MCPServerConfig {
     pub api_key: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MCPRegistry {
     pub registry: HashMap<String, MCPClient>,
     pub definitions: HashMap<String, ToolDefinition>,
@@ -119,13 +126,13 @@ impl MCPRegistry {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MCPClient {
     pub name: String,
     pub url: String,
     pub api_key: String,
     http_client: HttpClient,
-    server_adapter: Box<dyn MCPServerAdapter>,
+    server_adapter: Arc<Box<dyn MCPServerAdapter>>,
 }
 
 impl MCPClient {
@@ -135,7 +142,7 @@ impl MCPClient {
             url: config.url,
             api_key: config.api_key,
             http_client: HttpClient::new()?,
-            server_adapter: adapter,
+            server_adapter: Arc::new(adapter),
         })
     }
 
