@@ -8,7 +8,7 @@ Multi-LLM client library for Rust with support for OpenAI, Anthropic, and Google
 - ✅ **Streaming responses**: Server-Sent Events (SSE) support
 - ✅ **Async/await**: Built on tokio
 - ✅ **Type-safe**: Strongly typed requests and responses
-- ✅ **Agent pattern**: Builder pattern for easy configuration
+- ✅ **Agent pattern**: Lifetime-bound builder pattern where AgentBuilder borrows from AgentService, allowing safe      concurrent access and lazy resource initialization.
 
 ## Installation
 
@@ -93,11 +93,13 @@ async fn main() -> Result<()> {
 ### Configuration
 
 ```rust
-AgentBuilder::new()
-    .with_client(client)
-    .with_temperature(0.7)
-    .with_max_tokens(1000)
-    .build()?
+    let openai_api_key =
+        env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY environment variable not set");
+    let agent = agent_service
+        .builder()
+        .with_system(system_prompt)
+        .with_openai(&openai_api_key)?
+        .build()?;
 ```
 
 ## Examples
