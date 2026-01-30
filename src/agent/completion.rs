@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::capabilities::{
-    client::{completion::{CompletionStreamResponse, LlmClient}, mcp},
+    client::completion::{CompletionStreamResponse, LlmClient},
     completion::{
         message::Message,
         request::CompletionRequest,
@@ -17,9 +17,10 @@ use tracing::debug;
 
 #[derive(Debug)]
 pub struct Agent {
+    pub llm: String,
     pub model: String,
     pub client: Arc<dyn LlmClient>,
-    pub system: Option<String>,
+    // pub system: Option<String>,
     pub temperature: f32,
     pub max_tokens: i32,
     pub tool_registry: Arc<ToolRegistry>,
@@ -27,24 +28,28 @@ pub struct Agent {
 }
 
 impl Agent {
-    pub fn max_tokens(&self) -> i32 {
-        self.max_tokens
-    }
+    // pub fn max_tokens(&self) -> i32 {
+    //     self.max_tokens
+    // }
 
-    pub fn temperature(&self) -> f32 {
-        self.temperature
-    }
+    // pub fn temperature(&self) -> f32 {
+    //     self.temperature
+    // }
 
     //complete defines a multi turn chat
-    pub async fn complete(&self, messages: &Vec<Message>) -> Result<CompletionResponse> {
+    pub async fn complete(
+        &self,
+        system_prompt: &Option<String>,
+        messages: &Vec<Message>,
+    ) -> Result<CompletionResponse> {
         // debug!("Completion Request: {:#?}", request);
 
         let request = CompletionRequest {
             model: self.model.clone(),
-            system: self.system.clone(),
+            system: system_prompt.clone(),
             messages: messages.clone(),
-            temperature: 0.5,
-            max_tokens: 5000,
+            temperature: self.temperature,
+            max_tokens: self.max_tokens,
             stream: false,
             definitions: Vec::new(),
         };
@@ -54,13 +59,27 @@ impl Agent {
 
     pub async fn complete_with_stream(
         &self,
-        request: CompletionRequest,
+        system_prompt: &Option<String>,
+        messages: &Vec<Message>,
     ) -> Result<CompletionStreamResponse> {
+        let request = CompletionRequest {
+            model: self.model.clone(),
+            system: system_prompt.clone(),
+            messages: messages.clone(),
+            temperature: self.temperature,
+            max_tokens: self.max_tokens,
+            stream: true,
+            definitions: Vec::new(),
+        };
+
         self.client.complete_with_stream(request).await
     }
 
-    pub async fn complete_with_tools(&self, messages: &Vec<Message>) -> Result<CompletionResponse> {
-
+    pub async fn complete_with_tools(
+        &self,
+        system_prompt: &Option<String>,
+        messages: &Vec<Message>,
+    ) -> Result<CompletionResponse> {
         let mut definitions: Vec<ToolDefinition> = self
             .tool_registry
             .get_tools()
@@ -70,19 +89,21 @@ impl Agent {
             .collect();
         debug!("Tool_definitions: {:#?}", definitions);
 
-        let mcp_definitions= self.mcp_registry.definitions.clone();
+        let mcp_definitions = self.mcp_registry.definitions.clone();
         debug!("Mcp_definitions: {:#?}", mcp_definitions);
-        let _ = mcp_definitions.iter().for_each(|e| definitions.push(e.1.clone()));
+        let _ = mcp_definitions
+            .iter()
+            .for_each(|e| definitions.push(e.1.clone()));
         debug!("All definitions: {:#?}", definitions);
 
         let request = CompletionRequest {
             model: self.model.clone(),
-            system: self.system.clone(),
+            system: system_prompt.clone(),
             messages: messages.clone(),
-            temperature: 0.5,
-            max_tokens: 5000,
+            temperature: self.temperature,
+            max_tokens: self.max_tokens,
             stream: false,
-            definitions: definitions
+            definitions: definitions,
         };
 
         const MAX_ITERATIONS: usize = 5;

@@ -13,7 +13,7 @@ use crate::{
     providers::{anthropic, gemini, openai},
 };
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug, Clone)]
 pub struct LlmProvider {
     pub id: String,
     pub llm: String,

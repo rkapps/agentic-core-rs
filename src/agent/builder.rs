@@ -16,9 +16,9 @@ const MODEL_MAX_TOKENS: i32 = 5000;
 
 pub struct AgentBuilder<'a> {
     service: &'a AgentService,
+    llm: Option<String>,
     model: Option<String>,
     client: Option<Arc<dyn LlmClient>>,
-    system: Option<String>,
     temperature: Option<f32>,
     max_tokens: Option<i32>,
 }
@@ -29,10 +29,10 @@ pub struct AgentBuilder<'a> {
 impl<'a> AgentBuilder<'a> {
     pub fn new(service: &'a AgentService) -> Self {
         Self {
+            llm: None,
             model: None,
             service: service,
             client: None,
-            system: None,
             temperature: None,
             max_tokens: None,
         }
@@ -40,6 +40,7 @@ impl<'a> AgentBuilder<'a> {
 
     pub fn with_anthropic(mut self, api_key: &str) -> Result<Self> {
         let mut clients = self.service.clients.write().unwrap();
+        self.llm = Some(anthropic::LLM.to_string());
         self.model = Some(anthropic::MODEL_CLAUDE_SONNET_4_5.to_string());
         let client_key = format! {"{}:{}", anthropic::LLM, anthropic::MODEL_CLAUDE_SONNET_4_5};
         let client = clients
@@ -57,6 +58,7 @@ impl<'a> AgentBuilder<'a> {
 
     pub fn with_openai(mut self, api_key: &str) -> Result<Self> {
         let mut clients = self.service.clients.write().unwrap();
+        self.llm = Some(openai::LLM.to_string());
         self.model = Some(openai::MODEL_GPT_5_NANO.to_string());
         let client_key = format! {"{}:{}", openai::LLM, openai::MODEL_GPT_5_NANO};
         let client = clients
@@ -74,6 +76,7 @@ impl<'a> AgentBuilder<'a> {
 
     pub fn with_gemini(mut self, api_key: &str) -> Result<Self> {
         let mut clients = self.service.clients.write().unwrap();
+        self.llm = Some(gemini::LLM.to_string());
         self.model = Some(gemini::MODEL_GEMINI_3_FLASH_PREVIEW.to_string());
         let client_key = format! {"{}:{}", gemini::LLM, gemini::MODEL_GEMINI_3_FLASH_PREVIEW};
         let client = clients
@@ -87,12 +90,6 @@ impl<'a> AgentBuilder<'a> {
         let client = GeminiClient::new(api_key.to_string())
             .with_context(|| anyhow::anyhow!("Error creating Anthropic client"))?;
         Ok(Arc::new(client))
-    }
-
-    //set the temperature
-    pub fn with_system(mut self, system: String) -> Self {
-        self.system = Some(system);
-        self
     }
 
     //set the temperature
@@ -131,10 +128,10 @@ impl<'a> AgentBuilder<'a> {
         let client = self
             .client
             .ok_or_else(|| anyhow::anyhow!("Client is required"))?;
+        let llm = self.llm.ok_or_else(||anyhow::anyhow!("LLM is required"))?;
         let model = self
             .model
             .ok_or_else(|| anyhow::anyhow!("Model is required"))?;
-        let system = self.system;
         let temperature: f32 = self.temperature.unwrap_or(MODEL_TEMPERATURE);
         let max_tokens = self.max_tokens.unwrap_or(MODEL_MAX_TOKENS);
         let tool_guard = self.service.tool_registry.read().unwrap();
@@ -144,9 +141,9 @@ impl<'a> AgentBuilder<'a> {
         let mcp_registry = Arc::new(mcp_tool_guard.clone());
 
         Ok(Agent {
+            llm,
             model,
             client,
-            system,
             temperature,
             max_tokens,
             tool_registry,
