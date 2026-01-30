@@ -86,7 +86,7 @@ impl Tool for TickerAnalyseTool {
             .map(|entry| (entry.id.clone(), entry.vector.clone()))
             .collect();
 
-        // top 20 similarit results from vector_search
+        // top 5 similarit results from vector_search
         let results = vector_search(&input_embeddings.into_vec(), &candidates, 5);
         // iterator through result and return vector of (TickerEmbedding, f32)
         let final_results: Vec<(TickerEmbedding, f32)> = results
@@ -117,11 +117,35 @@ impl Tool for TickerAnalyseTool {
     }
 }
 
+
+/*
+    Tool-based RAG approach: LLM decides when/how to retrieve data, enabling multi-turn conversations 
+    and dynamic queries.
+
+    Dependency for vector_search on repo - https://github.com/rkapps/storage-core-rs
+    User prompts - Is apple a buy?
+
+    Build the agent using the AgentService -> AgentBuilder using the system prompt and the TickerAnalyseTool
+    Run the agent completion_completion with the user prompt.
+        Send a completion request to the LLM with the user prompt and the tool definition.
+        LLM responds with the ToolCall on ticker_analyse with arguments { "symbols": ["AAPL"]}
+        TickerAnalyseTool - execute
+            Validate the ticker is AAPL
+            Generate the embeddings for the user prompt.
+            Get the ticker embeddings for AAPL. This contains the embedding sentiment text and the vectors.
+            Build the candidates and call vector sector to get top 5 similarity vectors.
+            Iterator through the result to get the TickerEmbeddings for the results.
+            Format the response using the embedding text to return to LLM.
+
+    LLM responds back with the final summary.
+*/
+
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let filter = filter::Targets::new()
         .with_target("agentic_core::examples", Level::DEBUG)
-        // .with_target("agentic_core::agent", Level::DEBUG)
+        .with_target("agentic_core::agent", Level::DEBUG)
         ;
 
     tracing_subscriber::registry()
