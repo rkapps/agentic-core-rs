@@ -24,15 +24,16 @@ async fn main() -> Result<()> {
     let agent = agent_service.builder().with_anthropic(&api_key)?.build()?;
 
     let mut messages = vec![];
-    let content = "You are an elementary quiz coordinator. Design a multiple choise quiz after asking them about the grade, subject and difficult level. Provide 20 questions and rate them at the end.".to_string();
+    let system_prompt = Some("You are an elementary quiz coordinator. Design a multiple choise quiz after asking them about the grade, subject and difficult level. Provide 20 questions and rate them at the end.".to_string());
+    let content = "Start the quiz";
     let mut message = Message::User {
-        content: content.clone(),
+        content: content.to_string(),
         response_id: None,
     };
     messages.push(message);
 
     // Create agent
-    let response = agent.complete(&messages).await?;
+    let response = agent.complete(&system_prompt, &messages).await?;
     let response_id = response.response_id;// let aresponse = response.clone();
     let content = response.contents.get(0).unwrap();
     if let CompletionResponseContent::Text(val) = content {
@@ -46,7 +47,7 @@ async fn main() -> Result<()> {
     };
     messages.push(message);
 
-    let _ = agent.complete(&messages).await?;
+    let _ = agent.complete(&system_prompt, &messages).await?;
 
     Ok(())
 }

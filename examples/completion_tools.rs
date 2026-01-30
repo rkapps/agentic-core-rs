@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
         response_id: None,
     };
 
-    let response = agent.complete_with_tools(&vec![message]).await?;
+    let response = agent.complete_with_tools(&None, &vec![message]).await?;
     debug!("Response: {:#?}", response);
 
     Ok(())

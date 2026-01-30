@@ -145,7 +145,7 @@ impl Tool for TickerAnalyseTool {
 async fn main() -> Result<()> {
     let filter = filter::Targets::new()
         .with_target("agentic_core::examples", Level::DEBUG)
-        .with_target("agentic_core::agent", Level::DEBUG)
+        // .with_target("agentic_core::agent", Level::DEBUG)
         ;
 
     tracing_subscriber::registry()
@@ -170,7 +170,7 @@ async fn main() -> Result<()> {
     };
     messages.push(message);
 
-    let system_prompt = "You are financial expert and advisor in analysing stocks and market trends. You will help guide my decision making in the stock market";
+    let system_prompt = Some("You are financial expert and advisor in analysing stocks and market trends. You will help guide my decision making in the stock market. Use the provide tool if necessary to get information on the stocks".to_string());
 
     let tool = TickerAnalyseTool {
         prompt: content,
@@ -180,12 +180,11 @@ async fn main() -> Result<()> {
     let agent_service = AgentService::new();
     let agent = agent_service
         .builder()
-        .with_system(system_prompt.to_string())
         .with_openai(&api_key)?
         .with_tool(tool)
         .build()?;
 
-    let response = agent.complete_with_tools(&messages).await?;
+    let response = agent.complete_with_tools(&system_prompt, &messages).await?;
     println!("Response: {:?}", response);
 
     Ok(())

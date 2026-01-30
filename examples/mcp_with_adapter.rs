@@ -1,30 +1,31 @@
 use agentic_core::{
     agent::service::AgentService,
-    capabilities::{client::mcp::MCPServerAdapter, completion::{
-        message::Message,
-    }, rcp::JsonRpcRequest, tools::mcp::{MCPRegistry, MCPServerConfig}},
+    capabilities::{
+        client::mcp::MCPServerAdapter,
+        completion::message::Message,
+        rcp::JsonRpcRequest,
+        tools::mcp::{MCPRegistry, MCPServerConfig},
+    },
 };
 use anyhow::Result;
 use py_literal::Value as PyValue;
 use serde_json::{json, Map, Value as JsonValue};
-use tracing_subscriber::{filter, layer::SubscriberExt, util::SubscriberInitExt};
 use std::env;
-use tracing::{Level, debug};
+use tracing::{debug, Level};
+use tracing_subscriber::{filter, layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    
     let filter = filter::Targets::new()
         .with_target("agentic_core::providers::gemini", Level::DEBUG)
         .with_target("agentic_core::tools", Level::DEBUG)
         .with_target("agentic_core::agent", Level::DEBUG)
-        .with_target("agentic_core::examples", Level::DEBUG)
-        ;
+        .with_target("agentic_core::examples", Level::DEBUG);
 
-     tracing_subscriber::registry()
-        .with(tracing_subscriber::fmt::layer().compact().pretty())  // Compact format
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer().compact().pretty()) // Compact format
         .with(filter)
-        .init();    
+        .init();
 
     let alpha_api_key = env::var("ALPHA_API_KEY").expect("Alpha Vantage API Key not found");
     let config = MCPServerConfig {
@@ -44,19 +45,22 @@ async fn main() -> Result<()> {
     let agent_service = AgentService::new();
     let agent = agent_service
         .builder()
-        .with_mcp_registry(config, adapter).await?
-        .with_mcp_tool("Alpha", "COMPANy_OVERVIEW").await?
+        .with_mcp_registry(config, adapter)
+        .await?
+        .with_mcp_tool("Alpha", "COMPANy_OVERVIEW")
+        .await?
         // .with_gemini(&api_key)?
         .with_openai(&api_key)?
         .build()?;
 
+    let system_prompt = Some("You are financial expert and advisor in analysing stocks and market trends. You will help guide my decision making in the stock market. Use the provide tool if necessary to get information on the stocks".to_string());
     let content = "Tell me about apple stock".to_string();
     let message = Message::User {
         content: content.clone(),
         response_id: None,
     };
 
-    let response = agent.complete_with_tools(&vec![message]).await?;
+    let response = agent.complete_with_tools(&system_prompt, &vec![message]).await?;
     println!("Response: {:#?}", response);
 
     Ok(())
